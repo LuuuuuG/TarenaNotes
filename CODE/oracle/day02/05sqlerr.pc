@@ -1,0 +1,37 @@
+#include<stdio.h>
+exec sql include sqlca;
+
+void procerr(){
+	printf("(全局)err:%s\n",sqlca.sqlerrm.sqlerrmc);
+}
+
+void procnfd(){
+	printf("nf:%s\n",sqlca.sqlerrm.sqlerrmc);
+}
+
+int main(){
+	exec sql begin declare section;
+	  char userpasswd[30]="openlab/open123";
+	exec sql end declare section;
+	exec sql whenever sqlerror do procerr();
+	exec sql whenever notfound do procnfd();
+	exec sql connect:userpasswd;
+	  exec sql drop table table_123456;// 不存在 
+	  //发现错误 先向上找 全局异常处理 再向下找局部异常处理
+
+	  /* 局部错误处理
+	  if(sqlca.sqlcode==0){
+		printf("数据库删除成功！\n");
+	  }
+	  else{
+		printf("(局部)err:%s\n",sqlca.sqlerrm.sqlerrmc);
+	  }
+	  */
+	  exec sql select first_name into :name
+		  from s_emp;//数据行数太多 sqlerror
+	  exec sql select first_name into :name
+		  from s_emp where id=100;
+	
+	exec sql commit work release;
+	return 0;
+}

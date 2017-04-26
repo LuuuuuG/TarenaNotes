@@ -1,0 +1,13 @@
+#include<stdio.h>
+exec sql include sqlca;
+int main(){
+	char userpasswd[30] = "openlab/open123";
+	varchar var_name[30];
+	exec sql connect:userpasswd;
+	exec sql select first_name into var_name
+		from s_emp where id=1;
+	var_name.arr[var_name.len]='\0';
+	exec sql commit work release;
+	printf("var_name=%s xsy233\n",var_name.arr);
+	return 0;
+}

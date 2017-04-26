@@ -1,0 +1,1571 @@
+
+-------------------day01----------------------
+
+plsql
+	一、数据库访问相关技术
+	  1. plsql procedural language/sql 过程化的sql
+
+	  2. proc/c++ 使用c或者c++访问oracle数据库的技术
+
+	  3. odbc/ado vc中访问数据库的技术
+
+	  4. oci  oracle底层提供的连接接口
+	
+	  5. sql j/jbdc java访问数据库的技术
+
+	二、PL/SQL
+		1.概念 
+			在标准sql的基础上增加了过程话的处理的语句
+		  oracle客户端工具访问oracle服务器的操作语句
+		  	plsql对标准sql的扩充
+
+		2. 特点
+			结构化模块化的编程
+			良好的可移植性;
+			良好的可维护性;
+			提升系统的性能;
+
+			不便于向异构数据库移植;
+
+	三、SQL语言的特点
+		只管做什么 不管怎么做;
+		没有控制语句 和 过程;
+		没有算法描述能力;
+
+		机器语言 -> 汇编语言 -> 高级语言 -> 结构化语言
+
+	四、PL/SQL扩充的内容
+
+		1. 变量和类型
+		2. 控制语句
+		3. 过程和函数
+		4. 对象类型和方法
+		
+	五、plsql的程序结构
+
+		declare
+			/*申明区 声明变量 定义类型*/	
+			-- 单行注释
+		begin
+			/* 执行区 执行sql语句 或者plsql语句 */
+		exception
+			/* 异常处理区 程序出错之后 进行处理的区域 */
+		end;
+		/  --表示plsql的结束 独立占一行
+
+	六、plsql的开发环境
+	
+		sqlplus 命令行下的开发工具
+		plsqldeveloper 可视化的开发工具
+
+			begin
+				dbms_output.put_line('Hello Asshole~');
+			end;
+			/
+
+		设置输出为打开： set serveroutput on; --将内容打印在屏幕上
+
+
+
+	七、标识符
+		1. 作用
+		  给变量、类型、游标、过程、函数等命名
+
+		2. 用标识符命名变量
+		  变量名 类型;
+		
+			declare
+			  var_id number;
+			  var_name varchar2(25);
+			begin
+			  var_id:=12;  --赋值
+			  var_name:='Ben';
+			  dbms_output.put_line(var_id||'.'||var_name);
+			end;
+			/
+
+	八、变量
+		1.变量的类型
+		  a.标量类型
+			number binary_integer	数字类型
+			varchar2 char			字符串类型
+			date					日期类型
+			boolean					布尔类型
+				
+		  b.复合类型
+			record	类型 --类似c中的struct
+			table	类型 --类似数组
+		 
+   		  c.参考类型
+			ref 类型
+			
+		  d.大类型
+			BLOB 4G
+			CLOB 4G
+			BFILE 
+	
+		2.变量的修饰
+			constant
+			not null
+			
+
+			declare
+			  var_id constant number:=1;  
+			  var_name varchar2(25) not null:='abc';
+			begin
+			  --var_id:=12;  
+			  var_name:='Ben';
+			  dbms_output.put_line(var_id||'.'||var_name);
+			end;
+			/
+
+
+--用constant修饰的变量必须初始化
+--用constant修饰的变量不能被赋值
+--用not null修饰的便来那个必须有初始值
+-- 任何一个变量 如果没有赋值 则初始值为null
+
+		3.binary_intege 和 boolean类型的使用
+	
+			boolean:true false
+			declare
+				var_id binary_integer:=1;
+				var_flag boolean;
+			begin
+				var_flag:=true;
+				if var_flag then
+					dbms_output.put_line(var_id);
+				end if;
+			end;
+			/
+
+		4.定义两个变量，分别和s_emp表中id、first_name的类型相同，并且
+		  把id=1的数据赋值给这两个变量，并输出
+	
+			declare
+				var_id number;
+				var_name varchar2(25);
+			begin
+				var_id:=1;
+				var_name:='Apple';		
+				dbms_output.put_line(var_id||'.'||var_name);
+			end;
+			/
+
+		--改：
+			使用 表名.字段名%type 获取表中字段的数据类型(包括长度、精度)
+			declare
+				var_id s_emp.id%type;
+				var_name s_emp.first_name%type;
+			begin
+				--var_id:=1;
+				--var_name:='Apple';		
+				select id,first_name into var_id,var_name 
+				  from s_emp 
+				    where id=1;
+				dbms_output.put_line(var_id||'.'||var_name);
+			end;
+			/
+
+ 		5.record类型 (类似与c语言中的struct)
+		  a.record类型的定义
+			type 记录类型名 is record(
+				字段名 类型,
+				字段名 类型,
+				... ...
+			);
+		  b.定义一个record类型,有三个字段,分别是id,first_name,salary和s_emp中
+			对应的字段的类型相同,把id=2的员工的信息赋值给这个类型的变量
+
+			declare
+				--定义一个record类型
+				type emprecord is record(
+					id s_emp.id%type,
+					name s_emp.first_name%type,
+					sal s_emp.salary%type
+				);				
+				--声明变量
+				var_emp emprecord;
+			begin
+				--赋值
+				select id,first_name,salary --注意顺序
+				  into 	var_emp
+					from s_emp
+					  where id = 2;
+				--输出
+				dbms_output.put_line
+				(var_emp.id||'.'||var_emp.name||'.'||var_emp.sal);
+			end;
+			/
+			
+	
+		c.查询的字段数少于记录类型的数据的字段数
+
+			declare
+				--定义一个record类型
+				type emprecord is record(
+					id s_emp.id%type,
+					name s_emp.first_name%type,
+					sal s_emp.salary%type
+				);				
+				--声明变量
+				var_emp emprecord;
+			begin
+				--赋值
+				select id,first_name
+				  into 	var_emp.id,var_emp.name	--接收字段少
+					from s_emp
+					  where id = 2;
+				--输出
+				dbms_output.put_line
+				(var_emp.id||'.'||var_emp.name||'.'||var_emp.sal);
+			end;
+			/
+
+		6.思考 如何定义一个记录类型,接受id=1的所有数据
+			取得表中的一行 使用表名%rowtype
+			s_emp%rowtype	--获取员工表中的一行
+			s_deppt%rowtype --获取部门表中的一行
+
+
+		  	declare
+			  --声明变量
+				var_emp s_emp%rowtype;
+			begin
+				select * into var_emp from s_emp where id=1;
+			 dbms_output.put_line(var_emp.id||'.'||var_emp.first_name||'.'||var_emp.salary||'.'||var_emp.title);
+			end;
+			/
+
+		练习： 使用rowtype定义一个变量，把s_dept表中id=50的信息放入到这个变量中
+			  并输出这个变量的信息
+		  	declare
+			  --声明变量
+				var_dept s_dept%rowtype;
+			begin
+				select * into var_dept from s_dept where id=50;
+			 dbms_output.put_line(var_dept.id||'.'||var_dept.name||'.'||var_dept.region_id);
+			end;
+			/
+	
+
+		7.table 类型 类似于C语言中的数组
+		  a.table类型的定义语法
+			 type 类型名 si table of 元素类型
+			index by binary_integer;
+
+		  b.定义一个table类型，其中的元素是数字类型的
+		
+			declare
+				--定义table类型
+				type numstype is table of number
+				index by binary_integer;
+				var_nums numstype;
+			begin
+				--使用下标 操作table类型的变量
+			    var_nums(3):=30;
+			    var_nums(2):=50;
+			    var_nums(7):=20;
+				dbms_output.put_line(var_nums(3));
+			end;
+			/
+
+		  c.下标连续的时候
+
+			declare
+				--定义table类型
+				type numstype is table of number
+				index by binary_integer;
+				var_nums numstype;
+				var_ind binary_integer; --声明变量保存下标
+			begin
+				--使用下标 操作table类型的变量
+			    var_nums(3):=30;
+			    var_nums(2):=50;
+			    var_nums(1):=20;
+				var_ind:=1;
+				dbms_output.put_line(var_nums(var_ind));
+				--var_ind++; plsql 不支持++
+				var_ind:=var_ind+1;
+				dbms_output.put_line(var_nums(var_ind));
+				var_ind:=var_ind+1;		
+				dbms_output.put_line(var_nums(var_ind));
+				var_ind:=var_ind+1;
+
+			end;
+			/
+
+			
+		  d.下标不连续时，如何table类型的变量进行遍历
+			first() table 变量的第一个元素的下标
+			next(n) 根据一个元素的下标获取下一个元素的下标
+			last()	最后一个元素的下标
+
+
+			declare
+				--定义table类型
+				type numstype is table of number
+				index by binary_integer;
+				var_nums numstype;
+				var_ind binary_integer; 
+			begin
+				--使用下标 操作table类型的变量
+			    var_nums(3):=30;
+			    var_nums(2):=50;
+			    var_nums(7):=20;
+				var_ind:=var_nums.first();
+	
+				dbms_output.put_line(var_nums(var_ind));
+				--var_ind++; plsql 不支持++
+				var_ind:=var_nums.next(var_ind);
+				dbms_output.put_line(var_nums(var_ind));
+				var_ind:=var_nums.next(var_ind);		
+				dbms_output.put_line(var_nums(var_ind));
+				var_ind:=var_nums.next(var_ind);
+
+			end;
+			/
+
+
+		e.要求定义一个table类型 的变量，把s_emp表中id=1、id=3、id=7 的所有信息
+		放入这个变量。然后使用迭代器思想对table变量进行遍历，并打印输出 
+        id,first_name，salary.
+
+			
+			declare
+				type empstype is table of s_emp%rowtype
+				index by binary_integer;
+				var_emps empstype;
+				var_ind binary_integer; --下标
+			begin
+				select * into var_emps(1) from s_emp where id=1;
+				select * into var_emps(3) from s_emp where id=3;
+				select * into var_emps(7) from s_emp where id=7;
+				
+				var_ind:=var_emps.first();
+				dbms_output.put_line(var_emps(var_ind).id||'.'||
+				var_emps(var_ind).first_name||'.'||
+				var_emps(var_ind).salary);
+
+				var_ind:=var_emps.next(var_ind);
+				dbms_output.put_line(var_emps(var_ind).id||'.'||
+				var_emps(var_ind).first_name||'.'||
+				var_emps(var_ind).salary);
+
+				var_ind:=var_emps.next(var_ind);
+				dbms_output.put_line(var_emps(var_ind).id||'.'||
+				var_emps(var_ind).first_name||'.'||
+				var_emps(var_ind).salary);
+			end;
+			/
+
+
+
+		8.变量的作用域和可见性
+			plsql块的嵌套
+			
+			declare	
+			  var_m number:=10; --全局变量
+			begin
+				declare
+				  var_n number:=20; --局部变量
+				  var_m number:=100;
+				begin
+				  dbms_output.put_line(var_m); --局部可以访问全局变量
+							--局部变量和全局变量重名时 优先访问局部变量	
+				  dbms_output.put_line(var_n);
+				end;
+			  dbms_output.put_line(var_m);
+			  --dbms_output.put_line(var_n);-- 全局不能访问局部变量
+			end;
+			/
+
+
+			当局部变量和全局变量重名时 默认在局部访问的是局部变量
+		   此时如果想在局部访问全局变量，需要定义标签,用标签访问
+			如	<<abc>>
+			
+			<<abc>>
+			declare	
+			  var_m number:=10; 
+			begin
+				declare
+				  var_m number:=20; 
+				begin
+				  dbms_output.put_line('inner:var_m='||var_m); 	
+				  dbms_output.put_line('outer:var_m='||abc.var_m);
+				end;
+			  
+			end;
+			/
+
+	九、控制语句
+		1.分支语句
+		  a.基本语法
+			C语言中的if语句
+
+			1)简单if
+			if(条件){
+			  ...
+			}	
+
+			2)if..else
+			if(条件){
+			  ...
+			}	
+			else{
+			  ...
+			}
+
+			3)if..else if..
+
+
+			4)嵌套if
+			  if(){
+				if(){
+			  	}
+				else{
+				}
+			  }
+			  else{
+			  }
+
+		plsql中的if语句
+		1)if 条件 then --条件可以加小括号
+			--执行的操作
+		  end if;
+
+		2)if 条件 then
+		    ...
+		  else
+		    ...
+		  end if;
+
+		3)if 条件1 then
+			...
+		  elsif 条件2 then
+			...
+
+		  else
+			...
+		  end if;
+
+		4)if 条件 then
+			if 条件 then
+				...
+			else
+				...
+			end if;
+		  end if;
+
+
+		b.举例
+			定义三个变量，赋值，输出其中的最大值
+
+		declare
+			a number:=10;
+			b number:=20;
+			c number:=30;
+		begin
+			if b<c then
+				b:=b+c;
+				c:=b-c;
+				b:=b-c;
+			end if;
+			if a<b then
+				a:=a+b;
+				b:=a-b;
+				a:=a-b;
+			end if;			
+		  dbms_output.put_line(a);
+		end;
+		/
+
+		--从键盘接收三个数 输入最大值
+		declare
+			var_a number;
+			var_b number;
+			var_c number;
+		begin
+			var_a:=&var_a;
+			var_b:=&var_b;
+			var_c:=&var_c;
+		  if var_a<var_b then
+			if var_b<var_c then
+		  		
+		  else
+			if
+			
+			end if;
+	
+		  end if;
+		end;
+		/
+
+		
+		c.NULL 值的运算特点
+
+		  declare
+			var_a number;
+			var_b number;
+		  begin
+			if var_a>var_b then
+			  dbms_output.put_line('var_a>var_b');
+			elsif var_a<var_b then
+			  dbms_output.put_line('var_a<var_b');
+			elsif var_a=var_b then
+			  dbms_output.put_line('var_a=var_b');
+			elsif var_a is NULL and var_b is null then
+			  dbms_output.put_line('Shit! They''re null');
+			else
+			   	NULL;
+			end if;
+		  end;
+			/
+
+declare
+var_i number:=1;
+begin
+loop
+dbms_output.put_line('xsy 233');
+
+end loop;
+
+end;
+/
+
+	2.循环语句
+	  a.简单循环
+		loop
+			--循环操作
+		end loop;
+
+	  b.结束循环的方式
+		1)exit when 结束循环的条件;
+
+		2)if 结束循环的条件 then
+		    exit;
+		  end if;
+
+	  c.用简单循环实现输出1到10
+		declare
+			var_i number:=1;
+		begin
+			loop
+			  dbms_output.put_line(var_i);
+			  exit when var_i=10;
+			  var_i:=var_i+1;
+			end loop;
+		end;
+		/
+
+	
+		使用if语句退出 输出10到1
+
+		declare
+			var_i number:=10;
+		begin
+			loop
+			  dbms_output.put_line(var_i);
+			    if var_i = 1 then
+				  exit;
+			    end if;
+			  var_i:=var_i-1;
+			end loop;
+		end;
+		/
+		
+
+	d.while循环
+		语法:
+		 while 循环条件 loop
+			...
+		 end loop;
+		
+
+		declare
+			var_i number:=1;
+		begin
+			while var_i<=10 loop
+			  dbms_output.put_line(var_i);
+			  if var_i=5 then
+				exit;
+			  end if;
+			  var_i:=var_i+1;
+			end loop;
+		end;
+
+
+	练习：从1到100进行累加 输出和大于2000时对应的数字
+
+	declare
+		var_i number:=1;
+		var_s number:=0;
+	begin
+		while var_i <=100 loop
+		  var_s:=var_s+var_i;
+			if var_s>2000 then
+				dbms_output.put_line(var_i);
+				exit;
+			end if;
+		  var_i:=var_i+1; 
+		end loop;
+	end;
+	/
+
+
+	e.fro循环
+		语法：
+			for 变量 in 区间 loop
+				循环操作;
+			end loop;
+
+		用for循环输出1到10
+
+		begin
+		  for var_i in 1..100 loop
+			dbms_output.put_line(var_i||' xsy 233');
+			exit when var_i=55;
+		  end loop;
+		end;
+		/
+
+		for循环中循环变量不用声明
+		for循环中的循环变量不能被修改
+
+		begin
+		  for var_i in 1..100 loop
+			dbms_output.put_line(var_i||' xsy 233');
+			if var_i = 5 then
+				var_i:=11;	--error
+			end if;
+		  end loop;
+		end;
+		/
+
+
+		用for循环输出10到1
+		
+		begin
+		  for var_i in 1..10 loop
+			dbms_output.put_line(11-var_i); --修改打印数据
+		  end loop;
+		end;
+		/
+
+
+		begin
+		  for var_i in reverse 1..10 loop --反转区间
+			dbms_output.put_line(var_i);
+		  end loop;
+		end;
+		/
+
+
+
+	3.goto语句
+	  a.语法
+		<<标签>> 
+		 --这里必须有语句 NULL语句也可以
+
+		goto 标签; --标签可以在goto之前也可以在之后
+
+	  b.使用goto结合标签，输出1到10
+
+		declare
+		 	var_i number:=1;
+		begin
+			<<abc>>
+			if var_i<=10 then
+			  dbms_output.put_line(var_i||' xsy233');
+			  var_i:=var_i+1;
+			  goto abc;
+			end if;
+		end;
+
+	  c.退出多重循环的方式
+		循环三遍1-5
+		
+		begin		  
+		  for var_i in 1..3 loop
+			for var_j in 1..5 loop
+				dbms_output.put_line(var_j||' xsy233');
+				  if var_j=3 then
+				    goto outer;
+				  end if;
+			end loop;
+		  end loop;
+		  
+		  dbms_output.put_line('loop voer');
+		  <<outer>>
+		  NULL;
+		end;
+		/
+	
+
+		--第二种方法
+		begin
+		 <<outer>>
+		  for var_i in 1..3 loop
+			for var_j in 1..5 loop
+				dbms_output.put_line(var_j||' xsy233');
+				  if var_j=3 then
+				    exit outer;
+				  end if;
+			end loop;
+		  end loop;
+		  
+		  dbms_output.put_line('loop voer');
+		end;
+		/
+
+
+
+	练习：
+		1.定义record类型，把员工中id=2的id、first_name、dept_name
+		  放入这个类型的变量中
+	
+		declare
+		  type emprecord is record(
+			id s_emp.id%type,
+			name s_emp.first_name%type,
+			d_name s_dept.name%type
+		  );
+		  var_emp emprecord;
+		begin
+			select *
+			  into var_emp
+				from (select e.id,e.first_name,d.name
+				  from s_dept d,s_emp e
+					where e.dept_id=d.id)
+				  where id=2;
+			dbms_output.put_line(var_emp.id||'.'||
+			var_emp.name||'.'||var_emp.d_name);
+		end;
+		/
+
+		--方法二
+		declare
+		  type emprecord is record(
+			id s_emp.id%type,
+			name s_emp.first_name%type,
+			d_name s_dept.name%type
+		  );
+		  var_emp emprecord;
+		begin
+			select e.id,e.first_name,d.name into var_emp
+			  from s_emp e,s_dept d
+				where e.dept_id=d.id and e.id=2;
+			dbms_output.put_line(var_emp.id||'.'||
+			var_emp.name||'.'||var_emp.d_name);
+			end;
+			/
+			
+
+
+-------------------day02----------------------
+
+一、PLSQL中如何使用SQL语句
+	1. select语句
+
+		select语句要和into结合使用
+		select id,first_name,salary into var_emp from s_emp
+			where id=1;
+
+
+	2. dml语句(insert delete update)
+	   tcl语句(commit rollback savepoint)
+		可以直接在plsql中使用
+
+
+	3. ddl语句(create drop alter)
+		不能直接在plsql中使用 需要使用动态sql
+
+二、动态sql
+	1.概念
+	  把一条字符串对应的sql语句，当成真正的sql来执行
+
+	2.举例
+	  begin
+		create table testdsql_xsy_233(id number);
+      end;
+		--error ddl语句不能直接在plsql中使用
+
+	  declare
+		strsql varchar2(100);
+	  begin
+		strsql:='create table testdsql_xsy_233(id number)';
+		execute immediate strsql;
+      end;
+
+
+		--实现create table testdsql_xsy_233(id number,name varchar2(25));效果
+
+	  declare
+		strsql varchar2(100);
+	  begin
+		strsql:='create table testdsql_xsy_233(id number)';
+		strsql:=substr(strsql,1,length(strsql)-1);
+		strsql:=strsql||',name varchar2(25))';
+		dbms_output.put_line(strsql);	--打印需要输入命令 set serveroutput on;
+		execute immediate strsql;
+      end;
+
+		--desc testdsql_xsy_233; 查看表结构
+
+
+	3.dml的动态sql	
+	  a.常规的字符串拼接
+	
+		begin
+			insert into testdsql_xsy_233 values(1,'test1');
+			commit;
+		end;	--dml语句可以直接在plsql中使用
+		/
+
+
+		declare
+			strsql varchar2(100);
+		begin
+			strsql:='insert into testdsql_xsy_233 values(2,''test2'')';
+			dbms_output.put_line(strsql);
+			execute immediate strsql;
+			commit;
+		end;
+		/
+
+
+	  b.带变量的字符串拼接  --???
+		declare
+			strsql varchar2(100);
+			var_id number:=3;
+			var_name varchar2(25):='test3';
+		begin
+			strsql:='insert into testdsql_xsy_233 values('||
+				  	 var_id||','''||var_name||''')';
+			dbms_output.put_line(strsql);  
+			execute immediate strsql;
+			commit;
+		end;
+		/
+			--select * from testdsql_xsy_233;
+
+
+	  c.使用占位符 和 using 解决字符串的拼接
+		declare
+			strsql varchar2(100);
+			var_id number:=4;
+			var_name varchar2(25):='test4';
+		begin
+			strsql:='insert into testdsql_xsy_233 values(:b0,:b1)';
+			dbms_output.put_line(strsql);
+			execute immediate strsql using var_id,var_name;
+			commit;
+		end;
+		/
+
+
+		练习：删除表中指定编号的数据 编号用变量保存 id=1
+
+		declare
+			strsql varchar2(100);
+			var_id number:=1;
+		begin
+			strsql:='delete from testdsql_xsy_233 where id=:b0';
+			dbms_output.put_line(strsql);
+			execute immediate strsql using var_id;
+			commit;
+		end;
+		/
+
+	4. select语句的动态sql
+	  必须是不带into的select语句
+		要求select语句有且只有一个返回结果
+
+		declare
+			strsql varchar2(100);
+			var_name testdsql_xsy_233.name%type;
+		begin
+			strsql:='select name from testdsql_xsy_233 where id=4';
+			execute immediate strsql into var_name;
+			dbms_output.put_line(var_name);
+		end;
+		/
+
+
+三、游标 cursor (数据要顺序访问)
+	1.作用
+	  用来处理多行数据的结果集
+
+	2.使用游标的步骤
+		1)声明游标
+		  cursor 游标名 is select 语句;
+		2)打开游标
+		  open 游标名
+		3)提取数据
+		  fetch 游标名 into 变量
+		4)关闭游标
+		  
+	
+	3. 把s_emp表中的所有数据放入游标 输出
+
+		  declare
+		  	--
+		  	cursor empcursor is select * from s_emp;
+			--声明变量
+			var_emp empcursor%rowtype;
+		  begin
+			--打开游标	
+			open empcursor;
+			--提取数据
+			loop
+			fetch empcursor into var_emp;
+			dbms_output.put_line(var_emp.id||'.'
+						||var_emp.first_name
+						||var_emp.salary);
+
+			fetch empcursor into var_emp;
+			dbms_output.put_line(var_emp.id||'.'
+						||var_emp.first_name
+						||var_emp.salary);
+			end loop;
+			--关闭游标
+			close empcursor;
+		  end;
+		  /
+	
+	4.游标的属性
+	游标名%属性
+	found  在提取数据时，如果提取到了新数据则结果为真
+					如果没有提取到新数据则结果为假
+
+			如果没有打开则返回非法游标
+		   如果没有fetch则返回null
+
+	notfound  在提取数据时，如果提取到了新数据则结果为假
+					如果没有提取到新数据则结果为真
+
+			如果没有打开则返回非法游标
+		   如果没有fetch则返回null
+
+
+	isopen 		游标是否处于打开状态
+				游标打开返回真 否则返回假
+				打开的游标能再打开 关闭的游标不能再关闭
+				
+
+	rowcount 	游标的偏移量	
+				如果游标没有打开 则为非法游标
+
+
+	5.使用简单循环结合 notfound 属性 遍历游标
+
+		  declare
+		  	--声明游标
+		  	cursor empcursor is select * from s_emp;
+			--声明变量
+			var_emp empcursor%rowtype;
+		  begin
+			--打开游标	
+			open empcursor;
+			--提取数据
+			loop
+			fetch empcursor into var_emp;
+			exit when empcursor%notfound;
+			dbms_output.put_line(var_emp.id||' '
+						||var_emp.first_name||','
+						||var_emp.salary);
+
+			fetch empcursor into var_emp;
+			dbms_output.put_line(var_emp.id||' '
+						||var_emp.first_name||','
+						||var_emp.salary);
+			end loop;
+			--关闭游标
+			close empcursor;
+		  end;
+		  /
+
+
+	6.用while循环 结合found 属性对游标进行遍历
+
+		declare
+		  	--声明游标
+		  	cursor empcursor is select * from s_emp;
+			--声明变量
+			var_emp empcursor%rowtype;
+		  begin
+			--打开游标	
+			open empcursor;
+			--提取数据
+			fetch empcursor into var_emp;
+			while empcursor%found loop
+	
+			dbms_output.put_line(var_emp.id||' '
+						||var_emp.first_name||','
+						||var_emp.salary);
+
+			fetch empcursor into var_emp;
+
+			end loop;
+			--关闭游标
+			close empcursor;
+		  end;
+		  /
+
+
+	7.for 循环遍历游标
+	  智能循环(自动打开、提取、关闭游标)
+	    declare	
+			cursor empcursor is select * from s_emp;
+		begin
+			for var_emp in empcursor loop
+				dbms_output.put_line(var_emp.id||' '
+						||var_emp.first_name||','
+						||var_emp.salary);
+			end loop;
+		end;
+		/
+		
+		
+	8.带参游标
+		参数不能带有任何长度和精度的修饰 但是可以使用%type
+		打开游标时  传参
+
+	    declare	
+			cursor empcursor(var_id number) is select * from s_emp 
+			  where id > var_id;
+		begin
+			for var_emp in empcursor(10) loop
+				dbms_output.put_line(var_emp.id||' '
+						||var_emp.first_name||','
+						||var_emp.salary);
+			end loop;
+		end;
+		/	  
+
+	9.参考游标 ref
+	  游标 + 动态sql
+		strsql:='select * from s_emp'; --error
+
+	  如何使用参考游标?
+		a.定义参考游标类型
+			type 参考游标类型名 is ref cursor;
+		b.使用定义的参考游标 声明游标变量
+			var_empcursor 参考游标类型名;
+		c.把游标变量和动态sql结合起来
+			open var_empcursor for strsql;
+
+	  举例：
+		declare
+			
+		  	strsql varchar2(100);	--动态sql字符串
+			
+			type myrefcursor is ref cursor;	--定义参考游标类型
+			
+			empcursor myrefcursor;	--声明参考游标类型变量
+			
+			var_emp s_emp%rowtype;	--声明变量 接受每一行数据
+		begin
+			strsql:='select * from s_emp';
+			open empcursor for strsql;	--打开游标 结合游标和字符串
+			  loop		--循环提取数据
+			  	fetch empcursor into var_emp;
+				dbms_output.put_line(var_emp.id||' '
+						||var_emp.first_name||','
+						||var_emp.salary);
+			  end loop;
+			close empcursor;
+		end;
+		/
+
+
+--带有占位符
+		declare
+			--动态sql字符串
+		  	strsql varchar2(100);	
+			--定义参考游标类型
+			type myrefcursor is ref cursor;	
+			--声明参考游标类型变量
+			empcursor myrefcursor;	
+			--声明变量 接受每一行数据
+			var_emp s_emp%rowtype;	
+		begin
+			strsql:='select * from s_emp where id>:b0';
+			open empcursor for strsql using 20;	--打开游标 结合游标和字符串
+			  loop		--循环提取数据
+			  	fetch empcursor into var_emp;
+				dbms_output.put_line(var_emp.id||' '
+						||var_emp.first_name||','
+						||var_emp.salary);
+
+			  end loop;
+			close empcursor;
+		end;
+		/
+
+
+
+
+
+
+四、异常
+	1.系统预定义异常
+	  declare
+		var_name varchar2(25);
+		var_id number:=100;
+	  begin
+		select first_name into var_name from s_emp
+			where id = var_id;
+		dbms_output.put_line(var_name);
+	   exception
+		  when no_data_found then
+			dbms_output.put_line('no emp id='||var_id);
+		  when too_many_rows then
+ 			dbms_output.put_line('too many rows');
+		  when others then
+			dbms_output.put_line('other:'||
+			SQLCODE||'####'||SQLERRM);		
+	  end;
+	  /
+
+
+
+	--常用的系统预定义异常
+		1)no_data_found	 -使用select into 语句时，未返回行
+		2)too_many_rows	 -使用select into 语句时，返回超过一行
+		3)cursor_already_open  -试图打开一个已经打开的游标
+		4)dup_val_on_index  -唯一索引对应的列上有重复值
+		5)invalid_cursor	-非法游标	
+		6)invalid_number	-非法数字 无法将字符串转换成数字
+		7)zero_divide		-除数为0时
+
+	2.自定义异常
+	  a.定义异常
+	  b.根据条件抛出异常
+	  c.捕获异常
+	  d.处理异常
+
+		declare
+			too_many_emps exception;
+			var_num number(20);
+		begin
+			select count(*) into var_num from s_emp
+ 			  where salary>1500;
+			if var_num>3 then
+			  	raise too_many_emps;
+			end if;
+		  exception  
+			when too_many_emps then			
+			  dbms_output.put_line('holyshit too many emps');
+		end;
+		/
+
+
+
+五、存储过程 procedure
+
+  1.匿名块
+	declare
+		var_a number:=20;
+		var_b number:=30;
+	begin
+		if var_a>var_b then
+		  dbms_output.put_line(var_a);
+		else
+		  dbms_output.put_line(var_b);
+		end if;
+	end;
+	/
+
+
+  2.有名块(存储过程)
+
+	create or replace procedure 过程名[(参数列表)]
+	is --或者 as
+		申明区
+	begin
+		执行区
+	end;
+
+
+	 设计一个存储过程，定义两个变量，打印最大值
+		create or replace procedure getmax_xsy_233
+		is 
+			var_a number:=20;
+			var_b number:=30;
+		begin
+			if var_a>var_b then
+			  dbms_output.put_line(var_a);
+			else
+			  dbms_output.put_line(var_b);
+			end if;
+		end;
+		/
+	 
+
+	3.调用有名块
+
+		begin
+			getmax_xsy_233;
+		end;
+		/
+
+	4.带参数的存储过程
+		create or replace procedure getmax_xsy_233(var_a number,
+		var_b number)
+		is 
+			--放临时变量
+		begin
+			if var_a>var_b then
+			  dbms_output.put_line(var_a);
+			else
+			  dbms_output.put_line(var_b);
+			end if;
+		end;
+		/
+
+	5.查看存储过程
+		desc 过程名;
+		desc getmax_xsy_233;
+
+ Argument Name		Type			In/Out Default?
+ -----------------  -------------- ------- --------
+ VAR_A				NUMBER			IN
+ VAR_B				NUMBER			IN
+								(参数的模式)
+
+	1)in -负责向内存存储过程传入参数 默认的模式
+		  		实参可以是值 也可以是赋值过的变量
+	2)out -负责向外传出参数
+				实参必须是变量  不需要赋值
+	3)in out  -既负责传入 有负责传出
+				实参必须赋值过的变量
+	4)default -默认值
+
+	6.调用带参的存储过程
+	
+		declare
+			var_x number:=12;
+		begin
+			getmax_xsy_233(var_x,25);
+		end;
+		/
+
+	
+	7.设计一个存储过程，传入两个参数，输出最大值，并且把两个参数的和
+		存入第二个参数。测试这个存储过程
+
+		create or replace procedure getmax_xsy_233(var_a in number,
+		var_b in out number)
+		is 
+			--放临时变量
+		begin
+			if var_a>var_b then
+			  dbms_output.put_line(var_a);
+			else
+			  dbms_output.put_line(var_b);
+			end if;
+			var_b:=var_a+var_b;
+			
+		end;
+		/
+
+
+		--test 按照位置赋值
+
+		declare
+			var_x number:=10;
+			var_y number:=25;
+		begin
+			getmax_xsy_233(var_x,var_y);
+			dbms_output.put_line('sum='||var_y);
+		end;
+		/
+
+
+
+
+		--参数的默认值
+		create or replace procedure getmax_xsy_233(var_a in number default 15,
+		var_b in out number)
+		is 
+			--放临时变量
+		begin
+			if var_a>var_b then
+			  dbms_output.put_line(var_a);
+			else
+			  dbms_output.put_line(var_b);
+			end if;
+			var_b:=var_a+var_b;
+			
+		end;
+		/
+		
+		--desc getmax_xsy_233;
+
+		--按照参数名赋值
+			参数名=>参数值		
+
+		declare
+			var_y number:=25;
+		begin
+			getmax_xsy_233(var_b=>var_y);
+			dbms_output.put_line('sum='||var_y);
+		end;
+		/
+
+
+
+	8.设计一个存储过程，传入两个参数，
+		第一个参数 n 代表从1累加到的数字，
+		  第二个参数n_sum 存储前n项的和
+		create or replace procedure getmax_xsy_233(n in number,
+		n_sum out number)
+		is 
+			--放临时变量
+		begin
+			n_sum:=0;
+			for var_i in 1..n loop
+				n_sum:=n_sum+var_i;
+			end loop;
+		end;
+		/
+		
+		--test
+		declare
+			n number:=10;
+			n_sum number;
+		begin
+			getmax_xsy_233(n,n_sum);
+			dbms_output.put_line('n_sum='||n_sum);
+		end;
+		/			
+
+
+
+六、函数
+	1.函数和存储过程的区别
+		a.关键字不同 存储过程是procedure 函数是function
+		b.函数有返回类型和返回值 存储过程没有
+		c.存储过程在plsql中直接调用 函数必须组成表达式才可以调用
+
+	设计一个函数，求两个数的最小值
+		create or replace function getmin_xsy_233(
+		  x in number,y in number)
+		return number
+		is
+		begin
+			if x<y then
+			  return x;
+			end if;
+			return y;
+		end;
+		/
+
+		--调用
+		--sql中使用函数
+		select getmin_xsy_233(12,34) from dual; --dual 测试表
+	
+		--plsql中调用函数
+		
+		declare
+			var_min number;
+		begin
+			var_min:=getmin_xsy_233(233,250);
+			dbms_output.put_line(var_min);
+		end;
+		/
+
+
+七、包 package
+	1.概念
+		把一系列的相关数据组织到一起，给这写数据起一个逻辑名。
+	
+	2.系统提供的包
+		dbms_output:输出包
+		dbms_random:随机包
+		dbms_job:定时任务的调度包
+
+	查看包中的数据
+	  	desc 包名;
+		desc dbms_output;
+		desc dbms_random;
+		
+		value(low number,high number)	
+		
+		调用包中的数据，使用报名.函数
+		select dbms_random.value(1,100) from dual; --产生1-100之间的随机数
+		
+	3.定时任务调用包
+		desc dbms_job;
+		
+ 				--提交任务 系统分配一个任务号 仿如job中		
+	  submit(	
+		job out binary_integer,  --任务号
+		what in varchar2,	--定时执行的存储过程   '过程名()'
+		next_date in date, 		--第一次	实行的时间
+		interval in varchar2	--间隔 下一次执行的时间
+		);
+
+				--运行任务
+	  run(job in binary_integer);
+
+				--删除任务
+	  remove(job in binary_integer);
+
+
+	4.举例
+		a.创建一个测试表
+		 create table testjob_xsy_233(
+			id number primary key,
+			name varchar2(20) not null
+		);
+			
+		b.创建序列
+		  create sequence testjob_xsy_233_id;
+		
+		c.创建一个无参数的存储过程，向测试表中写入一行数据
+		  create or replace procedure testjob_insert_xsy_233
+		  is
+		  begin
+			insert into testjob_xsy_233 values(
+				testjob_xsy_233_id.nextval,
+				'xsy shi 233+'||testjob_xsy_233_id.currval			
+			);
+			commit;
+		  end;
+		  /				
+			
+		d.测试存储过程
+		  begin
+			testjob_insert_xsy_233;
+		  end;
+		  /
+
+
+		select * from testjob_xsy_233; --查看表中数据
+
+		e.定时调用存储过程
+		  declare
+			jobno binary_integer;
+		  begin
+			dbms_job.submit(jobno,'testjob_insert_xsy_233();',
+						sysdate,'sysdate+1/24/60/6');  --默认1天,设置每10秒执行一次
+			dbms_output.put_line(jobno);
+			dbms_job.run(jobno);
+		  end;
+		  /
+
+			--jobbo=534
+		select job,what from user_jobs;  --察看当前任务
+
+
+		f.删除定时任务
+			begin
+				dbms_job.remove(534);
+			end;
+			/
+						
+
+
+八、触发器
+	1.概念
+	  在进行dml操作时，系统可以对一个操作添加一些附加的操作
+	
+	2.语法
+	   三种语句：insert update delete
+	   两种类型：before after
+	   两种级别：行级 语句级
+
+	  create or replace trigger 触发器名
+		after|before  insert|update|delete
+		on 表明   空|for each row
+
+		declare
+
+	
+		begin
+
+
+		end;
+		/
+
+	3.举例
+
+
+		create or replace trigger testrigger_xsy_tri
+		after update on testjob_xsy_233
+		declare
+		begin
+			dbms_output.put_line('update testjob_xsy_233');
+		end;
+		/
+
+		
+		update testjob_xsy_233 set name='xsy213' where id=83;
+		update testjob_xsy_233 set name='xsy233' where id>1;
+
+		select * from testjob_xsy_233; --查看表中数据
+
+
+		--行级触发器
+
+
+		create or replace trigger testrigger_xsy_tri
+		after update on testjob_xsy_233 for each row
+		declare
+		begin
+			dbms_output.put_line(:old.id||' '||:old.name||'=>'||:new.name);
+			dbms_output.put_line('update testjob_xsy_233');
+
+		end;
+		/
+
+		:old    :new	%rowtype类型
+
+		update  :old  :new
+		insert		  :new
+		delete	:old
+
+
+	 	在触发器中不能出现事物控制语句
+
+	练习：
+	1.使用游标保存s_dept表中的全部数据，并打印输出
+
+		  declare
+		   	cursor deptcursor is select * from s_dept;
+			--声明变量
+			var_dept deptcursor%rowtype;
+		  begin
+			--打开游标	
+			open deptcursor;
+			--提取数据
+			fetch deptcursor into var_dept;
+			while deptcursor%found loop
+				dbms_output.put_line(var_dept.id||'.'
+						||var_dept.name
+						||var_dept.region_id);
+
+				fetch deptcursor into var_dept;
+						
+			end loop;
+			--关闭游标
+			close deptcursor;
+		  end;
+		  /						
+			
+	2.定义一个函数，传入两个参数，输出最大值，并返回两数之和
+
+
+
+
+
+
+
+
+
+
+
+

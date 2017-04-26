@@ -1,0 +1,1680 @@
+/**************************************************************************/
+*															              *	*							  day_01	                                  *	
+*									                                      *
+/**************************************************************************/
+
+张淑敏
+
+oracle_sql:4天
+plsql：2天
+proc/c++:2天
+
+
+	一、数据库的介绍
+	1. 数据库的简介
+
+	DB：database 数据库
+	DBMS: 数据库管理系统
+	DBA：数据库管理员
+	
+	RDB：关系型数据库 (relation)
+	RDBMS：关系型数据库管理系统
+
+	什么是关系型数据库？
+	基于二维表的数据库
+		
+		行 		字段
+			列   字段值
+	1.2 主流的关系型数据库产品
+		数据库	公司				占有率		产品
+		oracle	oracle(甲骨文)	50%	 		9i 10g 11g Java(原sun公司产品)
+		db2		IBM				20%
+		Sqlserver 微软			15% 		
+		
+
+		非商业数据库
+		Mysql	oracle(原属sun)
+
+
+
+	1.3 操作数据库的语言
+		SQL		Structured Query Language 	结构化查询语言
+		
+		(1)select 数据查询语句
+			select	
+		(2)ddl	数据定义语句
+			create drop(删) alter(改)
+		(3)dml	数据操作语句
+			insert delete update
+		(4)tcl	事物控制语句
+			commit(提交) rollback(撤销) savepoint
+		(5)dcl	数据控制语句
+			grant(授权) revoke(撤权)
+
+	
+	1.4 远程登陆服务器
+		1. 打开乌班图
+		2. telnet ip
+			172.30.8.10
+			172.30.8.20 
+			用户名：oracle
+			密码：oracle
+
+			//telnet 172.30.8.20
+		3. sqlplus:操作数据库的命令行工具
+			sqlplus
+			用户名：openlab
+			密码：open123
+			SQL>   -- 成功登陆			
+			//简写 sqlplus openlab/open123
+			
+
+	1.5 查看表结构
+		desc 表名;		//describe 
+			 s_emp;		//员工表信息
+
+/*  desc s_emp;   */
+ Name				   Null?    Type
+ -------------------  --------- ------------------
+ ID		(工号)		   NOT NULL NUMBER(7)
+ LAST_NAME	(姓)		   NOT NULL VARCHAR2(25)
+ FIRST_NAME	(名)				    VARCHAR2(25)
+ USERID 					    VARCHAR2(8)
+ START_DATE	(入职日期)		    DATE
+ COMMENTS					    VARCHAR2(255)
+ MANAGER_ID	(领导编号)		    NUMBER(7)
+ TITLE		(职位)			    VARCHAR2(25)
+ DEPT_ID	(部门编号)		    NUMBER(7)
+ SALARY 	(工资)			    NUMBER(11,2)
+ COMMISSION_PCT (提成)		    NUMBER(4,2)
+
+
+Name: 字段名
+Null？ 字段是否允许为空
+	not null:不允许为空
+	
+Type:数据类型
+	number(p,s) 数字类型		//p 长度 s 精度
+	varchar2(n)	变长字符串	//任何类型都按照2字节存放
+	char(n)		定长字符串
+	date		日期 时间
+
+
+	二、select 语句
+	几个概念：
+		选择：当全部列被选中,只有部分行被选中
+		投影：当全部行被选中,只有部分列
+		表连接：当查询的数据来自于多张表，就需要把多张表连成一张表
+	
+	2.1 select...from子句(/*必选项*/)
+		select 字段 from 表名；
+		(1)查询单列
+
+			1)查询员工的工资 ： select salary from s_emp;
+			查询多列：	select 字段1，字段2，.. from 表名;
+
+			2)查询每个员工的first_name,title,salary
+		/*	sql中原则上不区分大小写 但是字段值区分 */
+
+			3)查询表中全部的数据
+				用*代表全部列
+				--select * from s_emp;
+
+			4)表中字段的数学运算(一般情况是数字类型)
+				+ - * / 
+				查询每个员工的年收入
+				--select salary*12 + 200 from s_emp;
+
+			5) 字段或者表达式的别名
+				字段或表达式 [as]/*可选*/ 别名	
+				select salary*12 + 200 YearSal from s_emp;	//实际显示 YEARSAL
+				//默认别名显示成全大写  "别名" 用双引号把别名括起来 
+				别名中带空格
+				--select salary*12 + 200  "Year Sal" from s_emp;//显示YearSal
+				--select salary*12 + 200  Year Sal from s_emp;  //error
+				--select salary*12 + 200  "Year Sal" from s_emp;//显示Year Sal
+				别名是关键字时：
+				--select id /*as(可省略)*/ uid from s_emp;//error
+				--select id "uid" from s_emp;//显示uid
+
+			6)可以使用小括号改变晕眩的优先级别
+				--select 12*salary + 200 s_emp;
+				--select 12*(salary + 200) s_emp;
+				
+			查看每个员工的编号、名字、职位、领导编号、部门编号、
+			--select id,first_name,title,manager_id,dept_id from s_emp;
+			
+			7)字符串和拼接
+				sql中字符串用单引号 ''
+				 	'Hello world'   'a'
+				a.字符串的拼接  ||
+	  			--select first_name||'.'||last_name "Name" from s_emp;
+				
+				b.拼接一个单引号 如：this's
+					'前面加一个 起到转义的用法
+				--select first_name||''''||last_name "Name" from s_emp;
+					
+				c.拼接两个单引号
+			--select first_name||''''||''''||last_name "Name" from s_emp;
+		或	--select first_name||''''''||last_name "Name" from s_emp;
+			
+			8)null值的处理	
+			  --select first_name,title,
+			  12*(salary+salary*commission_pct/100) "YearSal" from s_emp;
+				表达式中只要有一个为null，整个表达式的值为null
+				
+			//nvl(part1,par2)函数：
+			当par1不为null,函数返回值是par1；
+			当par1为null,函数返回par2;
+			--select first_name,title,
+			  nvl(12*(salary+salary*commission_pct/100),12*salary) "YearSal" 					from s_emp;
+			//null值要尽早处理！
+			--select id,title,12*salary*(1+nvl(commission_pct,0)/100) 				"YearSal"  from s_emp;
+	
+			9)排重显示 //distinct
+				从员工表中查看职位类型
+				--select distinct title from s_emp;
+				//多列排重
+				--select distinct title,dept_id from s_emp;
+						
+
+
+
+/*-----------------------------可选项------------------------------*/
+ 	2.2 where子句.
+		select 字段 from 表名 where 条件;
+		根据条件对数据进行筛选，符合条件的选中，不符合条件的就过滤掉。
+		
+		<1>数字类型的条件
+			查看工资小于800的员工的信息
+			--select id,first_name,salary from s_emp where salary<800;
+
+		<2>字符串类型的条件
+			查看名字是Ben的 id,first_name,title
+			--select id,first_name,title from s_emp where first_name='Ben';
+			//字段值是区分大小写的  	sql中 " = " 表示 等于
+
+
+		<3>where 条件中运算符
+			a. >  <  >=  <=  =  !=(<> ^=)
+				where 字段 符号 值
+			b.sql中提供的运算符
+			  /*-------------------------------*/
+				I.表达一个区间 [a,b]
+					between a and b
+				查看工资在[1200,1400]内的员工的信息
+			--select id,first_name,salary from s_emp where salary between 1200 and 1400;
+
+				//练习：查看员工编号在[11,15]区间内的员工的信息
+			--select id,first_name,salary from s_emp where id between 11 and 15;			
+				II.表示一个列表
+					where 字段 in(列表)  //where age in(20,21,22)
+				//查看部门编号为31 42 45 的员工的信息
+			--select id,first_name,dept_id from s_emp where dept_id in(31,42,45);
+
+
+				III.模糊查询 //查找带龙字的员工 如：张小龙 张云龙 龙飞 成龙
+				
+				通配符：
+				%：任意长度的任意字符
+				_:一位任意字符
+
+				where 字段 like '%龙%' //查找带龙字的内容
+				//查看所有first_name 以'A'开头的员工
+				--select id,first_name from s_emp where first_name like 'A%';
+				//查看三哦有first_name第二个字符为'a'的员工的信息
+				--select id,first_name from s_emp where first_name like '_a%';
+				
+				user_tables:保存所有用户标的信息
+				desc user_tables;//select count(*)from user_tables;//计算表总数
+
+				--select table_name from user_tables where table_name like 'S%';
+				//查看user_table中以'S'开头的表
+
+				--select table_name from user_tables where table_name 
+			like 'S\_%' escape '\' ;//查看user_table中以'S_''开头的表
+				
+				IV.如何判断NULL值
+					where 字段 is null；
+				找出manager_id 为 null的员工信息：
+				--select id,first_name,manager_id from s_emp 
+				where manager_id is null;
+			  /*-------------------------------*/
+
+			c.sql中的逻辑运算服
+				and		逻辑与
+				or		逻辑或
+				not		逻辑非
+
+			练习：	
+			   查询工资在1200-1400之间的员工的信息
+					--select id,first_name from s_emp where salary >= 1200 and 						salary <= 1400;//等价 where salary between 1200 and 1400;
+				查询部门编号为 31 42 45的员工信息
+			--select id,first_name,salary,dept_id from s_emp 
+			where dept_id = 31 or dept_id = 42 or dept_id = 45;//等价 where dept_id in(31,42,45);
+			
+	
+			对立面：
+				>			<=
+				<			>=
+				>=			<
+				<=			>
+				=			!=
+				!=			=
+
+				between and not between and
+				in			not in(注意null)
+				like		not like
+				is null		is not null
+
+				查看提成不为空的员工的信息：
+				select id,first_name,commission_pct from s_emp 
+				where commission_pct is not null;
+
+
+
+	2.3 order by 子句(排序)
+		order by 子句在select语句的最后
+		select  字段
+    		   from	表名
+					where 条件
+						 order by 排序标准 排序方式
+		排序方式：
+			 asc 升序(ascending,字典循序 自然顺序) 默认方式			
+			 desc 降序(descending)
+
+		查询员工的工资信息 并按照工资降序排序
+		--select id,first_name,salary from s_emp order by salary desc;
+
+		按照部门编号升序排序:
+		--select id,first_name,dept_id from s_emp order by dept_id;	
+
+		//排序时,null值按照最大值处理
+
+		多列排序：
+		按照工资降序排序，如果工资相同，按照编号升序排序。
+		--select id,first_name,salary from s_emp
+		order by salary desc,id asc;
+	
+		查询工资高于1300的员工的信息 并按照工资降序排序
+		--select id,first_name,salary from s_emp
+		where salary>1300 order by salary desc;
+
+
+	练习：
+	
+	查看员工的工资
+	--select salary from s_emp;
+
+	查看员工的id,first_name,salary
+	--select id,first_name,salary from s_emp;
+
+	查看表中全部信息
+	--select * from s_emp;
+
+	查看员工的年收入 考虑提成
+	--select 12*salary*(1 + nvl(commission_pct,0)) from s_emp;
+
+	显示员工的姓名 其中名与姓之间用 . 隔开
+	--select first_name||'.'||last_name "Name" from s_emp;
+
+	查看表中员工的职位类型
+	--select distinct title from s_emp;
+
+	查询员工名字为 'Ben' 的信息 显示id,first_name,salary
+	--select id,first_name,salary from s_emp where first_name='Ben';
+
+	查询工资在[1200,1400]区间内的员工的信息
+	--select id,first_name from s_emp where salary between 1200 and 1400;
+
+	查询部门编号为31，42，45的员工的信息
+	--select id,first_name,salary from s_emp where dept_id in(31,42,45);
+	--select id,first_name,salary from s_emp where dept_id=31 or dept_id=42 or dept_id=45;
+	查看first_name中包含'a'的员工的信息
+	--select id,first_name,salary from s_emp where first_name like '%a%';
+
+ 	查看manager_id为null的员工的信息
+	--select id,first_name,salary from s_emp where manager_id is null;
+
+	查看提成不为空的员工的信息
+	--select id,first_name,salary from s_emp where manager_id is not null;
+
+	按照员工的工资降序排序,显示id,first_name,salary 如果工资相同则按照编号升序排序
+	--select id,first_name,salary from s_emp order by salary desc,id asc;	
+
+	2.4 单行函数 
+		1). 单行函数
+			针对sql语句影响的每一行都做处理,每一行产生结果
+			--select upper(first_name) from s_emp;
+	 	   【组函数】
+			针对sql语句影响的一组数据做处理，每组产生一个结果
+			--select count(first_name) from s_emp;	//计数
+
+		2). 测试表：dual
+			desc dual;	//描述表结构
+			--select upper('hello') from dual;
+
+		3). 字符串函数
+			upper(x):把x转换成全大写
+			lower(x):把x转换成全小写
+			--select lower('HeLLo') from dual;
+			
+			initcap(x):把x转换成每个单词转换成首字符大写
+			--select initcap('this is a string') from dual;
+
+			concat(x,y):把x，y两个字符串连接到一起//与 'x'||'y' 等价
+			-- select concat(first_name,last_name) from s_emp;
+			-- select concat(concat(first_name,'.'),last_name) from s_emp;
+			
+			substr(x,start[,length]/*可省略*/):截取子字符串
+			x:源字符串
+			start:开始截取的位置 从1开始 
+				  写成0 按照1处理	
+				  负数：表示从右边计数
+			length:截取的子字符串的长度 可以省略 省略时表示截取到字符串的结尾；
+			--select substr('Hello world',3,3) from dual; //llo
+			--select substr('Hello world',3) from dual;	  //llo world
+			--select substr('Hello world',0,5) from dual; // Hello
+			--select substr('Hello world',-5,5) from dual;// world
+			--select substr('Hello world',-5,10) from dual;// world
+			
+			length(x):返回x的长度
+			--select length('Hello world!') from dual; //12
+			
+			练习：
+			用两种方法获取s_emp表中first_name字段的后三位
+			--select substr(first_name,-3,3) from s_emp;
+			--select substr(first_name,length(first_name)-2) from s_emp;
+
+		4). 数字函数
+		  round(x[,y]/*可省略*/):四舍五入
+			x:数字
+			y:在省略时,默认y=0 round(33.56) --34
+			  正整数时,四舍五入到小数点后y位
+			  负整数时,四舍五入到小数点前边|y|位
+			--select round(4.567) from dual; //5	
+			--select round(4.567,2) from dual; //4.57	
+			--select round(456.789,-2) from dual; //500	
+		
+		  trunc(x[,y]/*可省略*/):截断
+			x:数字
+			y:在省略时,默认y=0 round(33.56) --34
+			  正整数时,截断到小数点后y位
+			  负整数时,截断到小数点前边|y|位
+			--select trunc(4.567) from dual; //4	
+			--select trunc(4.567,2) from dual; //4.56	
+			--select trunc(456.789,-2) from dual; //400	
+			
+
+		5). 日期类型和日期函数
+			date:
+			  日期类型的默认格式：
+			英文: dd-MON-yy 29-APR-16
+			中文: dd-n月-yy 29-4月-16
+			  日期格式的各个部分
+				yyyy  4位年(数字)	2016
+				year  年份的拼写	    twenty sixteen
+				mm	  2位月(数字)	04
+				mon(MON) 月份前三位 apr(APR) 
+				month(MONTH)	    april(APRIL) 
+				dd		2位日(数字)	29
+				dy		3位的星期几(fri)
+				day		星期几的全拼(friday)	
+				
+				hh		12小时制时间
+				hh24	24小时制时间
+				mi		分钟
+				ss		秒
+				am		上午(am)下午(pm)	 不能和hh24同时用
+			
+			--select id,first_name,start_date from s_emp;
+			--select sysdate from dual; //获取系统当前日期
+
+			常用的日期函数：
+				日期可以使用算术运算符
+				--select sysdate+2 from dual;
+				--select sysdate-100 from dual;
+				--select sysdate-to_date('2008-08-08','yyyy-mm-dd') from dual; 
+
+				add_months(d,n):在日期d上加n个月
+				--select add_months(sysdate,4) from dual; //29-AUG-16
+
+				months_between(d1,d2):返回两个日期相差的月数
+				--select months_between(29-APR-16,30-APR-16) from dual;
+
+				next_day(d,dw):返回日期d的下一个dw(星期几)
+				--select next_day(sysdate-2,'friday') from dual; //
+
+				last_day(d):返回日期d所在月份的最后一天
+				--select last_day() from dual;
+
+
+		6). 类型转换的函数
+			to_char(d|n[,fmt]):把日期或数字转换成特定格式的字符串
+				fmt:格式化字符串
+			日期：
+				--select to_char(sysdate,'yyyy-mm-dd hh24:mi:ss') from dual;
+		
+			--select to_char(sysdate,'yy.mm.dd hh24:mi:ss am day') from dual;
+
+			按照入职如其升序排序
+			--select id,first_name,start_date from s_emp order by start_date;
+			--select id,first_name,to_char(start_date,'yyyy-mm-dd') from s_emp order by start_date;
+
+
+			数字：
+				数字转换成字符串的格式：
+				9	小数点前表示 0-9，小数点后表示 1-9；
+				0   小数点前表示前置前导0，小数点后表示 0-9；
+				$   数字前边加美元符号
+				L   数字前边加本地货币符号(取决当前系统使用语言)
+				.	小数点
+				,	数字分割符   1,234,567,898
+
+				格式字符串用 fm 开头
+				--select to_char(1234567.89,'fm$099,999,999.99')from dual;
+	
+				--select to_char(salary,'fm$099,999.99') from s_emp;
+				--select to_char(salary,'fm$099,999.00') from s_emp;
+
+			to_date(x[,fmt]):把x按照fmt的格式转换成日期
+				--select to_date('2008-08-08 20:00:00','yyyy-mm-dd hh24:mi:ss')
+				from dual;			
+
+			to_number(x[,fmt]):把一个字符串转换成数字类型
+				隐式转换
+				--select id,first_name from s_emp where id = 1;
+				--select id,first_name from s_emp where id = '1'; //'1' => 1
+				显示转换
+				--select id,first_name from s_emp where id =to_number('1');
+
+				select to_number('$12,366.456','fm$99,999.999') from dual;
+
+
+
+		7). 函数的嵌套
+			一个函数的返回值作为另外一个函数的参数
+			  查看每个员工的id,first_name,manager_id，把manager_id为null的显示为
+			'BOSS'	
+		  		//nvl(字段,值) 参数可以是任何类型,但是两个参数必须类型相同
+			--select id,first_name,nvl(manager_id,'BOSS') from s_emp; //error
+			--select id,first_name,nvl(to_char(manager_id),'BOSS') from s_emp;	//BOSS
+			--select id,first_name,nvl(to_char(manager_id),'''BOSS''') from s_emp; 	//'BOSS'
+
+
+
+
+	2.5 表连接
+		1)s_dept:部门信息表  
+			--desc s_dept;//描述表
+
+ Name				   Null?    Type
+ -------------------- -------- -----------------
+ ID					   NOT NULL NUMBER(7)
+ NAME				   NOT NULL VARCHAR2(25)
+ REGION_ID						NUMBER(7)
+
+			--select * from s_dept;//查看所有信息
+
+		2)s_region:地区信息表
+			--desc s_region;//描述表
+ Name				   Null?    Type
+ --------------------- -------- ----------------
+ ID					   NOT NULL NUMBER(7)
+ NAME				   NOT NULL VARCHAR2(50)
+
+			--select * from s_region;//查看所有信息
+
+
+		3) 查看员工的信息 编号 名字 所在部门的名称
+		编号名字： s_emp
+		部门名称： s_dept
+		--select s_emp.id,s_emp.first_name,s_dept.name 
+		from s_emp,s_dept;//笛卡尔积  25emp.id * 12dept = 300
+
+		--select s_emp.id,s_emp.first_name,s_dept.name 
+		from s_emp,s_dept where s_emp.dept_id = s_dept.id;//24emp.id *1dept=24
+
+		表连接，表名.字段名表示,当字段名在查询使用的多个表中只出现一次,可以省略表名
+		
+		--select s_emp.id,first_name,name 
+			from s_emp,s_dept 
+				where s_emp.dept_id= s_dept.id;
+
+		可以为表命名别名 一旦命名别名，原表名失效
+		--select e.id,e.first_name,d.name 
+			from s_emp e,s_dept d
+			  where e.dept_id = d.id;
+
+
+/*-------------------vvv oracle中的语法 vvv-------------------------*/
+
+		4) 表连接的分类
+			I. 内连接
+				关联条件成立时 得到的结果集
+			  a. 等值内连接
+		  		  关联条件用 =
+				  查看每个部门及所在地区的信息 显示部门编号、部门名称、地区名称	
+			--select d.id,d.name d_name,r.name r_n		//3		(执行顺序)
+			    from s_dept d,s_region r				//1
+				  where d.region_id = r.id;				//2				
+						
+			  b.非等值连接						
+				desc salgrade;
+				drop table salgrade;//删表		
+				create table salgrade(
+				  grade number primary key,    //级别
+				  losal number(11,2) not null,	//最低工资
+				  hisal number(11,2) not null	//最高工资
+				  );
+				insert into salgrade values(1,700,1200);
+				insert into salgrade values(2,1201,1400);
+				insert into salgrade values(3,1401,2000);
+				insert into salgrade values(4,2101,5000);
+				insert into salgrade values(5,5001,10000);
+
+				commit;
+				select * from salgrade;
+
+			查看每一个员工的名字，工资以及工资的级别
+				名字、工资：s_emp
+				级别：salgrade 
+				 s_emp:salary
+				 salgrade:losal hisal 
+
+				 --select e.first_name,e.salary,g.grade
+					  from s_emp e,salgrade g
+						where e.salary>=g.losal and e.salary<=g.hisal; 	
+					//where e.salary between g.losal and g.hisal;
+				
+
+			列出所有领导的first_name	
+			  c.自连接
+				逻辑上，把一张表看成多张表
+				//select id,first_name,title,manager_id from s_emp;
+
+				--select distinct m.first_name 
+				  	from s_emp e,s_emp m
+					  where e.manager_id = m.id;
+
+
+			II.外连接 
+				外连接的结果集 = 内连接的结果集 + 匹配不上的记录
+				(+):  oracle特有的语法 
+					  表示 (+)对面表的数据全部出现在结果集中
+			  a. 自连接
+				查看普通员工的信息
+				
+				--select distinct m.first_name 
+				  	from s_emp e,s_emp m
+					  where e.manager_id != m.id;//error --逻辑错误
+				
+				--select distinct e.first_name,m.id,m.first_name 
+				  	from s_emp e,s_emp m
+					  where e.manager_id(+) = m.id
+						and e.manager_id is null;	//
+
+			  b.等值连接
+				查看所有员工以及部门信息 包括没有部门的员工
+			--select e.id,e.first_name,d.name 
+				from s_emp e,s_dept d
+	 			  where e.dept_id = d.id(+);	
+
+			--select e.id,e.first_name,d.name 
+				from s_emp e,s_dept d
+	 			  where e.dept_id(+) = d.id;	
+
+			列出所有的部门和所在地区的信息,包括没有部门的地区 
+			--select d.id,d.name,r.name 
+				from s_dept d,s_region r
+				  where d.region_id(+) = r.id;
+			//(+) 只能出现在关联条件的一侧
+
+			  c.非等值连接
+			    查看全员工部工资级别	
+				--select first_name,salary,grade
+					from s_emp s,salgrade g
+					  where s.salary between g.losal(+) and g.hisal(+);
+					  //where s.salary>=g.losal(+) and s.salary<=g.hisal(+);
+					
+				
+/*---------------------^^^oracle中的语法^^^-------------------------*/
+
+		III. SQL标准中表连接的语法
+			内连接：
+				from 表1 [inner] join 表2 on 连接条件
+
+				--select s_dept.name,s_region.name
+					from s_dept inner join s_region
+					  on s_dept.region_id = s_region.id;
+			
+			外连接：
+			  左外连接：from 表1 left[outer] join 表2 on 连接条件//表1信息全要 
+
+				--select s_dept.name,s_region.name
+					from s_dept left join s_region
+					  on s_dept.region_id = s_region.id;
+	
+			  右外连接：from 表1 right[outer] join 表2 on 连接条件//表2信息全要
+
+				--select s_dept.name,s_region.name
+					from s_dept right join s_region
+					  on s_dept.region_id = s_region.id;
+
+			  全外连接：from 表1 full[outer] join 表2 on 连接条件//俩表信息全要
+
+				--select s_dept.name,s_region.name
+					from s_dept full join s_region
+					  on s_dept.region_id = s_region.id;
+
+
+
+			IV.合并结果集
+				union		排重
+				union all 	不排重
+				
+				-- select id from s_emp union 
+				   select id from s_dept;//37 row
+				
+				-- select id from s_emp union all
+				   select id from s_dept;//38 row
+
+				两个查询语句 列的数量和对应的数据类型必须相同
+
+	2.6 组函数和分组
+		1. 组函数
+			count:统计一组数据的个数
+			max:	  		  最大值
+			min:			  最小值
+			sum:			  求和
+			avg:			  平均值
+
+		count 参数可以是任意类型 可以使用*	
+
+		统计工资大于1500的员工的人数:
+		--select count(salary) from s_emp
+			where salary>1500;
+		统计有提成的员工的数量	
+		--select count(commission_pct) from s_emp;		
+	
+		统计表中的数据行数
+		--select count(*) from s_emp;		
+
+		统计表中职位的种类
+		--select count(distinct title) from s_emp;
+
+		max、min 参数可以是任何数据类型。
+		统计最大工资、最小工资	
+		--select count(salary),max(salary),min(salary)
+			from s_emp;			
+	
+		统计最早入职、最晚入职日期
+		--select to_char(max(start_date),'yyyy-mm-dd'),
+			to_char(min(start_date),'yyyy-mm-dd') from s_emp;
+
+		sum、avg 参数只能是数字类型
+		--select count(salary),sum(salary),avg(salary) 
+			from s_emp where dept_id = 42;
+	
+		--select sum(commission_pct) from s_emp;
+		
+   		--select sum(salary),sum(distinct salary) from s_emp;//排重无意义
+
+
+		所有的组函数：
+			对null值的处理：忽略
+			参数可以用distinct修饰
+	
+	  2. 分组
+		1)分组的概念
+			按照一定的标准，把数据分成若干个组
+			group by 分组标准
+			where 之后 order by	之前	
+		2)举例
+			按照部门编号 统计每个部门的人数
+			--select count(id) from s_emp
+				where 1=1
+				  group by dept_id;
+
+		3)按照部门进行分组，统计每个部门的平均工资大于1500
+			--select dept_id,avg(salary) from s_emp
+			  	where salary>1500	
+				  group by dept_id;//语法正确 逻辑错误
+
+			--select dept_id,avg(salary) from s_emp	
+			    group by dept_id
+				  where avg(salary)>1500;//语法错误
+		
+		having子句：分组后筛选符合条件的组。
+		位置：group by 之后
+			--select dept_id,avg(salary) from s_emp	
+				where 1=1
+			      group by dept_id
+				    having avg(salary)>1500;
+		[练习] 按照部门分组，统计每个部门的人数 
+				要显示人数大于等于2的部门编号(名称/*两表连查*/)、人数
+			--select e.dept_id,d.name,count(e.id) 
+			    from s_emp e,s_dept d
+				  where e.dept_id = d.id
+			        group by e.dept_id,d.name
+					  having count(e.id)>=2;
+			
+			分组语句中 字段要么是分组标准，要么是组函数的参数
+		语法顺序：
+			select
+			  from
+				where	--从源数据中筛选符合条件的数据
+				  group by	--将where筛选后的数据 根据分组标准进行分组
+					having		--分组后 筛选出符合条件的组
+						//having只能出现在 group by后 不能单独使用
+					  order by
+	
+		执行顺序：用别名判断
+			--select e.dept_id,d.name,count(e.id) // 5
+			    from s_emp e,s_dept d				// 1
+				  where e.dept_id = d.id			  // 2 
+			        group by e.dept_id,d.name			// 3
+					  having count(e.id)>=2;			  // 4
+						order by count(e.id) asc;			// 6
+
+	2.7 子查询	
+		子查询就是一个查询语句嵌入到另一条sql语句中的子句中，
+	  先执行嵌套的查询语句，结果集作为外面的SQL语句的条件或者一部分。
+
+		1. where之后
+		  1)单行子查询
+			子查询的结果集是单值时，可以使用 =
+			e.g. 查看职位和 'Ben' 相同的员工的信息
+			a.查出'Ben'的职位
+			 --select title from s_emp where first_name = 'Ben';
+			b.查询职位是'Warehouse Manager'的员工的信息
+			--select id,first_name,title from s_emp
+				where title='Warehouse Manager';
+			c.把上面的两条语句合并
+			--select id,first_name,title from s_emp
+				where title=(
+				  	select title from s_emp 
+					  where first_name = 'Ben'			
+				);			
+
+
+		2)多行子查询
+		  子查询的结果是多行时，比须使用多行的操作符，比如in
+		  a.列出所有的领导的信息，
+			--select distinct manager_id from s_emp;//1 2 3 6 7 8 9 10 null
+		
+		  b.根据领导编号列出领导的first_name,salary
+			--select id,first_name,salary from s_emp
+				where id in(1,2,3,6,7,8,9,10,null);
+		  c.合并
+			--select id,first_name,salary from s_emp
+				where id in(
+				  select distinct manager_id 
+					from s_emp
+				);   
+		
+			查看所有普通员工的信息
+			--select id,first_name,salary from s_emp
+				where id not in(
+				  select distinct manager_id 
+					from s_emp
+					  where manager_id is not null
+				); 
+
+			--select id,first_name,salary from s_emp
+			  	where id not in(1,2,3,6,7,8,9,10);
+
+/*
+	in 等价与 '='
+	where id in (1,2,3,null) = id=1 or id=2 or id=3 or id=null
+
+	where id not in (1,2,3,null) = id!=1 and id!=2 and id!=3 and id!=null
+*/
+
+
+	2. having 之后
+		按照部门分组，求每个部门的平均工资，显示平均工资
+		比编号为42的部门的平均工资高的部门的信息
+		a)编号为42的部门的平均工资
+		--select avg(salary) from s_emp
+			where dept_id = 42; //1081.7
+		
+		b)根据秋初的平均工资进行筛选
+		--select dept_id,avg(salary) from s_emp
+			group by dept_id
+			  having avg(salary)>1081.7;
+
+		c)合并		
+		--select dept_id,avg(salary) from s_emp
+			group by dept_id
+			  having avg(salary)>(
+			 	select avg(salary) from s_emp
+				  where dept_id = 42
+			  );
+		
+	3. from 之后
+		任何一个合法的select语句，都会在内存中构建一张表，
+	  称为内存表
+
+	  --select * from(
+		  select id,first_name,salary from s_emp
+		)where id<10;
+
+
+		/* 子查询实现 三表连查：*/
+	  --select s_emp.first_name,dept.d_name,dept.r_name from s_emp,
+		  (select d.id id,d.name d_name,r.name r_name
+			from s_dept d,s_region r
+			  where d.region_id = r.id) dept
+		  		where s_emp.dept_id=dept.id;
+	
+
+
+
+/**************************************************************************/
+*															              *	*							  day_02	                                  *	
+*									                                      *
+/**************************************************************************/
+
+
+
+
+
+	三、表操作
+	  3.1 创建表和删除表
+		1. 标识符的命名
+		  a. 大小写英文字母、0-9 数字、 $ 、#
+		  b. 不能用数字开头
+		  c. 1-30 位
+		  d. 不能和关键字 或其它的对象重名
+			作用：给表、字段、数据库对象命名
+		2. 创建表的语法
+			表名_姓名_位置
+			create table 表名(
+			  字段名1 数据类型,
+			  字段名2 数据类型,
+				...
+			  字段n	  数据类型
+			);
+
+		  e.g. 创建一个表：
+			编号 number
+			姓名 varchar2	长度25
+			工资 number		保留2位小数点
+			入职日期 date
+			create table emp_XuShaoYuan_233(
+				id number(5),
+				name varchar2(25),
+				salary number(10,2),
+				start_date date
+			);
+
+		删除表： drop table 表名;
+			
+
+	  3.2 DML语句
+		  insert(插入) delete(删除) update(更新)
+
+		1. insert语句
+			1) 语法
+			  insert into 表名[(字段列表)] values(值列表);
+			2) 举例
+				insert into emp_XuShaoYuan_233(id,name,salary,start_date)
+				  values(233,'XuShaoYuan',2333,sysdate);
+				
+
+				当值列表的数量和顺序和表定义的一致，可以省略字段列表
+				insert into emp_XuShaoYuan_233
+				  values(2333,'XuShaoYuan2',233.3,
+					     to_date('2016-02-03','yyyy-mm-dd'));
+
+				当值列表没有给所有的字段传值时，字段列表不能省略
+			  字段列表的顺序和内容要和值列表一致
+				insert into emp_XuShaoYuan_233(id,name,salary)
+				  values(250,'xsy',233.33);
+
+				 或者省略字段列表，其对应位置字段值填空值
+				insert into emp_XuShaoYuan_233
+				  values(23333,'xsy',23333.33,null);
+
+				commit;
+			select * from emp_XuShaoYuan_233;//查看表中所有数据
+
+			desc emp_XuShaoYuan_233;//描述表结构
+
+
+		2. delete语法
+			1) 语法
+				delete from 表名[where 条件];
+				  没有where子句的delete语句 表示清空表中全部数据
+				rollback; //-- 回滚 表示撤销操作	
+				
+				delete from emp_XuShaoYuan_233 
+					where start_date is null;
+
+
+		3. update 语句
+		  1)语法
+			update 表名 set 字段1 = 更新值1,字段2 = 更新值2
+			  [where 条件];
+		  2)示例
+			update emp_XuShaoYuan_233 set salary = salary - 100;
+			update emp_XuShaoYuan_233 set salary = salary + 50
+			where id = 233;			
+
+			
+		练习：
+			假设有一张成绩表，字段StuNo(学号)、c_no(课程编号)、score(成绩)。
+			把c_no为1的成绩每人加5分，100分封顶。
+/*建表*/
+create table score2(
+stuNo number not null,
+c_no number not null,
+score number check(score<=100)
+);
+commit;
+insert into score2 values(1,1,96);
+insert into score2 values(1,2,88);
+insert into score2 values(2,1,90);
+insert into score2 values(2,2,56);
+insert into score2 values(3,1,66);
+insert into score2 values(3,2,98);
+insert into score2 values(4,1,80);
+insert into score2 values(5,1,50);
+commit;
+
+			
+		//查看表 select * from score2;
+			--update score2 set score = 100
+				where score >= 95;		//先将分数超过95的加到100分
+
+			--update score2 set score = score + 5
+				where c_no = 1 and score < 95;  //再将分数不足95的+5
+
+
+	3.3 TCL
+		1. 事务控制语句的含义
+			commit;	确认事务
+			rollback;回滚事物
+			savepoint n; 保存点
+
+		2. 事务的四大特征
+		  1)原子性 
+			  事务中的语句是一个不可分割的整体
+				转帐:
+				--update account set balance = balance - 2000
+					where a_no = 1;
+				a//扣款成功
+				--update account set balance = balance + 2000
+					where a_no = 2;
+				b//收款成功
+			
+				if(a&&b)
+					commit;//转帐成功
+				else
+					rollback;
+			要么一起成功，要么一起失败
+
+		  2)隔离性
+			  一个事务中的语句，在没有提交之前，这个语句所引起的数据的变化，对另一个
+			事务而言是不可见的
+
+		  3)持久性
+			
+		  4)一致性
+
+
+		3. 部分成功 部分失败
+		  create table testtrans_xsy_233(
+			id number,
+			name varchar2(25)
+		  );
+
+			insert into testtrans_xsy_233 values(1,'test1');
+			savepoint a;
+			insert into testtrans_xsy_233 values(2,'test2');
+			savepoint b;
+			insert into testtrans_xsy_233 values(3,'test3');
+			select * from testtrans_xsy_233;
+			rollback to b;
+			commit;
+			select * from testtrans_xsy_233;
+
+		
+		//	select * from testtrans_xsy_233; 查表
+		//  delete from testtrans_xsy_233;	 删表
+
+			select语句：和事务无关
+			ddl语句：自动提交
+			dml语句：默认不是自动提交 手动提交
+
+
+
+
+	总结与回顾：
+		1. 组函数和分组
+			count 
+			max
+			min
+			sum
+			avg
+		
+			对null值的处理 ： 忽略
+			都可以使用distinct排重
+		
+		group by 分组标准
+			
+		分组语句中的字段 要么是分呢组标准 要么是组函数的参数
+
+		having 条件
+		 	分组后的筛选 只能在group by 后使用
+
+		2. 子查询
+			where 
+			having	
+			from
+
+		3. 表操作
+		  1) ddl
+		  2) dml
+		  3) tcl
+
+		练习：
+			1 列出编号43的部门的人数、最高工资、最低工资、总工资、平均工资。
+				select count(id),max(salary),min(salary),sum(salary),avg(salary)
+				  from s_emp
+					where dept_id = 43;
+
+			2 按照部门分组，显示人数大于2的每个部门的名称(id)和人数 
+				select e.dept_id,d.name,count(e.id)
+				  from s_emp e,s_dept d
+					where e.dept_id = d.id
+					  group by e.dept_id,d.name
+						having count(e.id)>2;
+
+			3 查询工资高于'Ben'的员工信息
+				select id,first_name,salary from s_emp
+				  where salary > (
+					select salary from s_emp
+					  where first_name = 'Ben'
+				);
+
+			4 使用子查询分别列出领导的信息和普通员工的信息
+				select id,first_name,salary from s_emp
+				  where id in (
+					select manager_id from s_emp
+				);
+
+				select id,first_name,salary from s_emp
+				  where id not in(
+					select manager_id from s_emp
+					  where manager_id is not null
+				);
+
+			5 列出所有平均工资高于42部门的平均工资的部门信息(部门编号，部门平均工资)
+				select dept_id,avg(salary) from s_emp
+				  group by dept_id 
+					having avg(salary) > (
+					select avg(salary) from s_emp
+					  where dept_id = 42
+				);
+
+			6 用子查询列出员工的first_name 部门的name 地区的 name
+				select s_emp.first_name,dept.d_name,dept.r_name
+				  from s_emp,(
+					select d.id id,d.name d_name,r.name r_name
+					  from s_dept d,s_region r
+						where d.region_id = r.id)dept 
+				  	where s_emp.dept_id = dept.id;		
+
+
+			7 创建如下数据表
+				表名: Student_名字_编号
+				StuNo: number
+				Name: varchar2(25)
+				Birthday:date
+				Address:varchar2(50)
+				Phone:varchar2(20)
+
+			 插入3条测试数据
+				将编号为2 的学生的地址更改为null
+				删除表中编号为3 的数据
+			create table Student_xushaoyuan_233(
+			  	StuNo number,
+				Name varchar2(25),
+				Birthday date,
+				Address varchar2(50),
+				Phone varchar2(20)
+			);
+			commit;
+			insert into Student_xushaoyuan_233 values(1,'zhangsan',to_date('2000-01-01','yyyy-mm-dd'),'beijing','110');
+
+			insert into Student_xushaoyuan_233 values(2,'lisi',to_date('2000-01-01','yyyy-mm-dd'),'beijing','120');
+
+			insert into Student_xushaoyuan_233 values(3,'wangwu',to_date('2000-01-01','yyyy-mm-dd'),'beijing','119');
+
+			commit;
+
+		 	update Student_xushaoyuan_233 set Address = null
+			  where StuNo = 2;
+		
+
+			delete from Student_xushaoyuan_233 where StuNo = 3;
+
+
+
+
+
+/**************************************************************************/
+*															              *	*							  day_03	                                  *	
+*									                                      *
+/**************************************************************************/
+
+
+
+
+		3.4 约束
+		  3.4.1 概念
+			对数据库表中的字段进行限制
+		
+		  3.4.2 具体的约束类型
+			1) 主键约束 primary key
+				不允许重复(值是唯一的) 非空
+				一个表中只能有一个主键
+
+			2) 唯一约束 unique
+				不允许重复
+				一个表中可以存在多个唯一约束
+
+			3) 检查约束 check
+				值必须符合检查条件
+
+			4) 非空约束 not null
+				不允许为空
+
+			5)外键约束 foreign key references
+				表之间的关系
+				一个表中的某个字段的值必须来自于另一张表某个字段的值
+				或者为null
+
+		3.4.3 实现约束的方式
+			1) 列级约束
+				约束直接在字段后添加
+			2) 表级约束
+				表中的所有字段都定义完后,用都好隔开在最后添加
+
+
+		  <1>主键约束
+			a.系统自动提供约束名 (列级约束)
+			create table testcons_xsy_233(
+				id number primary key,
+				name varchar2(25)
+			);
+			insert into testcons_xsy_233 values(1,'test1');
+
+			insert into testcons_xsy_233 values(1,'test1');
+			//或者命令行中敲 '/'表示执行上一条命令
+			//ERROR：ORA-00001: unique constraint (OPENLAB.SYS_C0022090) violated
+
+			insert into testcons_xsy_233 values(null,'test1');
+			//ERROR:ORA-01400: cannot insert NULL into 			 	
+			//("OPENLAB"."TESTCONS_XSY_233"."ID")
+			insert into testcons_xsy_233 values(2,null);
+
+			delete from testcons_xsy_233;//删除表内容
+			drop table testcons_xsy_233;//删除表
+
+			b. 自己给约束起名字 (列级约束)
+			字段名 数据类型 constraint 约束名 约束类型
+			create table testcons_xsy_233(
+				id number constraint testcons_xsy_233_id_pk primary key,
+				name varchar2(25)
+			);
+			insert into testcons_xsy_233 values(1,'test1');
+			insert into testcons_xsy_233 values(1,'test1');
+
+			c.表级主键约束
+			create table testcons_xsy_233(
+				id number ,
+				name varchar2(25),
+				primary key(id) 
+			);
+			
+
+			  联合主键(把多个字段联合起来做主键)
+			  联合主键只能通过表级约束的方式设置
+			create table testcons_xsy_233(
+				id number ,
+				user_id number,
+				name varchar2(25),
+				primary key(id,user_id)
+			);
+			insert into testcons_xsy_233 values(1,1,'test1');
+			insert into testcons_xsy_233 values(1,2,'test1');
+			insert into testcons_xsy_233 values(2,1,'test1');
+			insert into testcons_xsy_233 values(1,1,'test1');//error
+
+		/*实际开发中很少使用联合主键，如果有这种业务需求，添加一个列作为主键*/
+
+		<2>唯一、非空、检查约束
+			非空约束没有表级约束
+			drop tabel testcons_xsy_233;
+			create table testcons_xsy_233(
+				id number primary key,
+				user_id varchar2(20) unique,
+				name varchar2(25) not null,
+				salary number(11,2) check(salary >= 1720)
+			);
+			insert into testcons_xsy_233 values(1,'1123581321','xushaoyuan',250);
+	
+			insert into testcons_xsy_233 values(1,'1123581321',null,2500);
+
+			insert into testcons_xsy_233 values(1,'1123581321','xushaoyuan',2500);
+
+			insert into testcons_xsy_233 values(2,'1123581321','xushaoyuan',2500);
+
+			insert into testcons_xsy_233 values(1,'31415926','xushaoyuan',2500);
+
+
+
+			唯一、检查约束的表级实现
+			drop table testcons_xsy_233;
+			create table testcons_xsy_233(
+				id number primary key,
+				user_id varchar2(20) ,
+				name varchar2(25) not null,
+				salary number(11,2), 
+				[constraint testcons_xsy_233_user_id_un] unique(user_id),
+				[constraint testcons_xsy_233_sal_ck] check(salary>=1720)
+				/* 起名可以省略 */
+			);
+			如果使用的是联合主键、联合唯一、检查约束中着级多个字段这几种情况，
+		  需要使用表级约束。
+
+	
+		<3> 外键约束
+			1) 概念
+				一个表的字段值，要受限于另外一张表的字段值
+				主表(父表)：字段被引用的表
+				从表(子表)：地难以了外键约束(数据来源于主表对应的字段值,或者为null)
+
+			2) 建表
+				先创建主表，在创建从表
+				除非在创建表时不考虑外键约束，在表创建完成后添加
+			  	create table parent_lg_88(
+					id number primary key,
+					name varchar2(25) not null
+				);
+				
+				create table child_xsy_233(
+					id number primary key,
+					name varchar2(25) not null,
+					pid number constraint C_pid_p_id_fk references
+					 parent_lg_88(id)
+				);
+
+			3) 插入数据
+				先向主表写入数据，再向从表写入或者从表中外键设置为null
+				insert into child_xsy_233 values(1,'test1',1); //违反约束
+				insert into parent_lg_88 values(1,'Sales');
+				insert into child_xsy_233 values(1,'test1',1);
+				insert into child_xsy_233 values(2,'test1',null);
+
+			4) 删除或修改时，不能造成子表中数据孤立
+				delete from parent_lg_88 where id = 1;
+				update parent_lg_88 set id = 2 where id = 1;
+				update child_xsy_233 set pid = 2 where pid is null;
+
+				以上三条语句都违反了约束，无法执行		
+
+
+			5) 删除表
+				先删子表 后删主表
+				drop table child_xsy_233;
+				drop table parent_lg_88;
+
+				先去掉约束，再删除表
+				drop table 表名 cascade constraints;
+
+				删除主表
+				drop table parent_lg_88 cascade constraints;
+				drop table child_xsy_233 cascade constraints;
+
+			6) 级联删除和级联置空
+			  a.级联删除：on delete cascade
+
+			  	create table parent_lg_88(
+					id number primary key,
+					name varchar2(25) not null
+				);
+
+				insert into parent_lg_88 values(1,'Sales');
+				insert into parent_lg_88 values(2,'Admin');
+				commit;
+				
+				create table child_xsy_233(
+					id number primary key,
+					name varchar2(25) not null,
+					pid number,
+				     foreign key(pid) references parent_lg_88(id)
+					on delete cascade
+				);
+				
+				insert into child_xsy_233 values(1,'test1',1);
+				insert into child_xsy_233 values(2,'test1',1);
+				insert into child_xsy_233 values(3,'test1',2);
+				insert into child_xsy_233 values(4,'test1',2);
+				insert into child_xsy_233 values(5,'test1',2);
+
+				commit;
+				select * from parent_lg_88;
+				select * from child_xsy_233;
+
+				delete from parent_lg_88 where id = 1; 
+/*-----------------对应的子表-----------------*/
+	ID NAME 			    PID
+------ ---------------------- ----------
+	 3 test1			      2
+	 4 test1			      2
+	 5 test1			      2
+
+
+
+
+			  b.级联置空：on delete set null
+			删表：
+				drop table parent_lg_88;
+				drop table child_xsy_233;
+
+			  	create table parent_lg_88(
+					id number primary key,
+					name varchar2(25) not null
+				);			  
+
+				create table child_xsy_233(
+					id number primary key,
+					name varchar2(25) not null,
+					pid number,
+				     foreign key(pid) references parent_lg_88(id)
+					on delete set null
+				);
+
+				insert into parent_lg_88 values(1,'Sales');
+				insert into parent_lg_88 values(2,'Admin');
+				commit;
+
+				insert into child_xsy_233 values(1,'test1',1);
+				insert into child_xsy_233 values(2,'test1',1);
+				insert into child_xsy_233 values(3,'test1',2);
+				insert into child_xsy_233 values(4,'test1',2);
+				insert into child_xsy_233 values(5,'test1',2);
+
+				commit;
+				select * from parent_lg_88;
+				select * from child_xsy_233;
+			
+				delete from parent_lg_88 where id = 1;
+/*-----------------对应的子表-----------------*/
+	ID NAME 			    PID
+------ ---------------------- ----------
+	 1 test1
+	 2 test1
+	 3 test1			      2
+	 4 test1			      2
+	 5 test1			      2
+
+
+
+
+
+
+
+
+	四、数据库的其他对象和分页
+	  4.1 数据库的其他对象
+ 		<1>. 序列(用来产生主键的值)  (Oracle)
+		  sequence  --创建用于测试序列的表
+			create table fuckseq_xsy_233(
+				id number primary key,
+				name varchar2(25) not null
+			);
+	
+		  1) 建立序列的语法
+			create sequence 序列名;
+			create sequence fuckseq_xsy_id;
+
+		  2)使用徐累 主键的最大值10^27
+			currval:	当前值
+			nextval:	下一个值		
+			至少使用过一次nextval以后，才能使用currval
+		
+			序列名.nextval  序列名.currval
+
+			insert into fuckseq_xsy_233 values(
+			fuckseq_xsy_id.nextval,
+			'shit'||fuckseq_xsy_id.currval
+			);
+
+			commit;
+			select * from fuckseq_xsy_233;
+			
+		  3)删除序列
+			drop sequence 序列名;
+			drop sequence fuckseq_xsy_id;
+
+
+		  4)创建一个复杂的序列
+			user_sequences; 
+			desc user_sequences;
+    		
+			select sequence_name from user_sequences
+			where sequence_name like '%fuck%';
+
+			
+			create sequence fuckseq_xsy_id
+				increment by 5
+				start with 5
+				minvalue 5
+				maxvalue 100
+				cache 3;
+
+
+				insert into fuckseq_xsy_233 values(
+					fuckseq_xsy_id.nextval,
+					'shit '||fuckseq_xsy_id.currval
+				);
+
+				commit;
+				select * from fuckseq_xsy_233;
+
+				序列和表是相互独立的，一个序列可以应用到多个表
+
+
+		<2>.索引(index)
+			1)作用：提高查询效率 加速查询
+				用创建时的 空间+时间 换查询的 时间
+			  索引会消耗大量的空间和时间
+			
+			2) 系统会自动 在唯一性字段上建立索引
+				create index 索引名 on 表名(字段);
+				
+				--测试索引的表
+				create table fuck_index(
+					id number primary key,
+					name varchar2(20)
+				);
+				
+				--创建一个序列
+				create sequence fuck_index_id;
+			
+				--测试序列
+				insert into fuck_index values(
+					fuck_index_id.nextval,'shit-o-'||
+					fuck_index_id.currval
+				);
+				--循环写入数据
+				begin		
+					for var in 1..10000 loop
+						insert into fuck_index values(
+							fuck_index_id.nextval,'shit-o-'||
+							fuck_index_id.currval
+						);
+						commit;
+					end loop;
+				end;
+				/
+				
+				--查看
+				select * from fuck_index;
+
+			3) 手动添加索引
+				create index 索引名 on 表名(字段);
+				create index fuckind_name on fuck_index(name);
+
+
+			4)删除索引
+				drop index 索引名;
+		
+
+		<3>. 视图(view)
+			视图本质上就是一条SQL语句
+			所以相对视图对应的数据 视图的空间可以忽略不计
+			create table emp_xsy_233 as select * from s_emp;
+			//备份s_emp表到emp_xsy_233表中
+
+			
+			a.创建视图
+				create or replace view 视图名 as select语句;			
+
+			 create or replace view myview_emp
+			 as select id,first_name from s_emp;
+			//可以选择只添加部分数据到视图中 
+					
+				
+			b. 操作视图
+			  select * from myview_emp;
+			  delete from myview_emp where id = 25;
+			//对视图的操作就是对原表的操作 删视图的数据 同样会删原表的数据
+		
+				对视图执行的dml(insert\delete\update) 就是改变原表的数据
+			c.作用
+			  可以对同一份物理数据，做不同的表现
+
+
+	4.2 分页
+			C/S 客户端/服务器
+			B/S	浏览器/服务器
+
+		oracle 		rownum(伪列)
+		sqlserver 	top
+		mysql 		limit	
+					
+	  1) 把s_emp表中的第一页数据显示出来 每页显示5行
+
+		--select rownum,first_name,salary from s_emp;
+	
+		--select rownum,first_name,salary from s_emp
+			where rownum < 6;
+
+	  2) 把s_emp表中的第二页数据显示出来 每页显示5行
+
+		--select rownum,first_name,salary from s_emp
+			where rownum > 5 and rownum < 11;// no rows selected
+		
+			使用rownum时，只要有一条不符合条件就不再执行
+
+		--select * from
+			(select rownum r_id,first_name,salary from s_emp
+			  where rownum < 11)
+				where r_id > 5;
+
+	  3)按照工资降序排序，显示第二页数据,每页5条	
+
+		--select * from
+			(select rownum r_id,first_name,salary from s_emp
+			  where rownum < 11 
+				order by salary desc)
+				where r_id > 5;
+
+			//先分页在排序
+
+		--select * from(
+			select rownum r_id,first_name,salary from 
+			(select first_name,salary from s_emp
+			  order by salary desc)
+				where rownum < 11)
+				where r_id > 5;
+
+			//先排序 在分页 三层嵌套
+
+		第n页，每页m行
+
+		--select * from(
+			select rownum r_id,first_name,salary from 
+			(select first_name,salary from s_emp
+			  order by salary desc)	where rownum < n*m+1)
+				where r_id > (n-1)*m;
+
+
+
+	Oracle总结：
+		一、数据库介绍
+			sql：
+			select：
+			ddl：create drop alter
+			dml:insert delete update
+			tcl:commit rollback savepoint
+	
+		二、select
+		  1. select..from
+			单列
+			多列
+			全部
+			数学运算
+			列的别名 [as] ""
+			字符串 '' ||
+			排重 distinct
+			null值的处理  nvl
+		  2. where子句
+			 > < >= <= = !=/<>/^=
+			between and 闭区间
+			like 	模糊查询 %_ 'S\_%' escape'\''
+			in 		列表
+			and or not
+			对立面
+
+		  3. order子句
+			order by 排序规则(字段) 排序方式(asc desc)
+			多列排序
+			null值 按最大值处理
+
+		  4. 单行函数
+			字符串
+			数学
+			日期 date
+			类型转换 to_char to_date
+			函数嵌套
+
+		  5. 表连接
+			内连接
+			外链接
+		
+			等值连接
+			非等值连接
+			
+			  自连接		--可以用子查询替换
+		
+		  6. 组函数和分组
+			count max min sum avg
+			group by
+			having			
+
+		  7. 子查询
+
+
+		三、表操作
+
+		四、数据库
+
+
+

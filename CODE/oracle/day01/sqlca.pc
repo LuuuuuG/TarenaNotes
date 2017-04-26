@@ -1,0 +1,32 @@
+#include<stdio.h>
+exec sql include sqlca;
+int main(){
+	exec sql begin declare section;
+	  char userpasswd[30]="openlab/open123";
+	  int ids[50];
+	  char names[50][30];
+	exec sql end declare section;
+	exec sql connect:userpasswd;
+  	  if(sqlca.sqlcode==0){
+		printf("数据库连接成功!\n");
+	  }
+	  else{
+		printf("数据库连接失败!\n");
+		return 0;
+	  }
+	  exec sql select id,first_name into :ids,:names from s_emp;
+	   /*select 查询看似一行 其实是循环查询*/
+	  if(sqlca.sqlcode==0){
+		printf("数据查询成功！\n");
+	  }
+	  else{
+		printf("%s\n",sqlca.sqlerrm.sqlerrmc);
+	  }
+
+	  int i=0;
+	  for(i=0;i<sqlca.sqlerrd[2];i++){
+		printf("%d,%s\n",ids[i],names[i]);
+	  }
+	exec sql commit work release;
+	return 0;
+}

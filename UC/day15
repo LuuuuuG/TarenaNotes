@@ -1,0 +1,258 @@
+/**************************************************************************/
+*															    		  *	
+*								day_15					   				  *	
+*									   									  *
+/**************************************************************************/
+
+
+
+
+		
+	1. 网络相关的基本常识
+	
+		目前主流的网络通讯软件主要有：QQ、微信、飞信、	
+
+	
+	1.1 七层网络协议模型和常用的网路协议
+		(1)七层网络协议模型
+			一般来说,ISO将数据的传递从逻辑上划分为一下七层：
+
+			应用层：将具体的数据内容传递给应用程序,如：QQ
+			表示层：将数据内容按照统一的格式进行打包和封装;
+			会话层：控制对话合适开始，合适终止等；
+			传输层：进行错误检查和重新排序等；
+			网络层：选择具体的网络协议进行再次打包和发送
+			数据链路层：将具体的数据包转换为高低电平信号
+			物理层：主要指具体的交换机等物理设备
+
+
+		(2)常用的网络协议
+			a.TCP协议   -传输控制协议,是一种面向链接的协议,类似//打电话;
+			b.UDP协议	-用户数据报协议,是一种非面向链接的协议,类似//写信;
+			c.IP协议		-互联网协议,是上述两种协议的底层协议；
+
+
+
+	1.2 IP地址和子网掩码(重点)
+		(1)IP地址 	-本质就是互联网中的唯一地址标识；
+			  	是由32位二进制组成的整数(ipv4),也有128位二进制组成的整数(ipv6)
+
+/*			查看IP地址：
+				Window系统中：在dos窗口中使用 ipconfig 命令
+				Linux系统中： 在终端中使用    ifconfig命令
+								(如果不好使则使用/sbin/ifconfig命令即可)
+				
+*/
+
+		日常生活中采用点分十进制表示法来描述IP地址,不同的整数之间采用小数点分隔。
+
+		如：
+			0x01020304	=>  1.2.3.4
+
+		为了便于IP地址的管理,将IP地址分为两部分：网络地址+主机地址,根据网络地址
+	和主机地址位数不同分为以下4类：
+
+			A类：0 + 7 位网络地址 +24 位主机地址	
+			B类：10 + 14 位网络地址 + 16 位主机地址
+			C类：110 + 21 位网络地址 + 8 位主机地址	
+			D类：1110 + 28 位多播地址 	
+
+		
+
+		(2)子网掩码
+			主要用来划分IP地址中的网络地址和主机地址,也可以用于判断两个IP地址
+		  是否在同一个局域网中,具体的划分方法为：
+		
+				IP地址  &  子网掩吗  =  网络地址;
+				
+			如：IP地址 172.30.100.64
+			  子网掩码 255.255.255.0
+					  ---------------
+					   172.30.100	-网络地址
+
+
+
+	1.3 端口号和字节序
+		(1)端口号
+				IP地址		-定位到具体的某一台主机/设备上；
+				端口号		-定位到主机/设备上的某一个进程；
+
+		  		网络编程中需要提供两个信息：	IP地址 + 端口号
+
+				端口号本质上就是unsigned short类型,范围是：0 ~ 65535
+					其中0 ~ 1024 之间的端口号被系统占用,建议从1025开始使用；
+
+		(2)字节序
+				小端系统：主要指将低位数据保存在低位内存地址的系统
+
+				大端系统：将低位数据保存在高位内存地址的系统；
+		
+				如：0x12345678
+					小端系统按照内存地址从小到大： 0x78 0x56 0x34 0x12
+					大端系统按照内存地址从小到大： 0x12 0x34 0x56 0x78
+
+
+			一般性原则：
+				一般来说,将所有发送到网络中的多字节整数先转换为网络字节序再发送,
+			  而将所有从网络中接受过来的多字节整数,先转换为主机字节序再解析,其中
+			  网络字节序本质就是大端系统痛的字节序；
+			/*多字节整数不不扩：char float double */
+
+		  
+
+	2. 基于socket的一对一通信模型
+	2.1 基本概念
+			socket 本意为"插座" ，在这里指用于同性的逻辑载体；
+		
+	2.2 通信模型
+
+			服务器：
+					(1)创建socket,使用socket函数;
+					(2)准备通信地址,使用结构体类型;
+					(3)绑定socket和通信地址,使用bind函数;
+					(4)进行通信,使用read/write函数
+					(5)关闭socket,使用close函数；
+
+			客户端：
+					(1)创建socket,使用socket函数
+					(2)准备通信地址,使用服务器的地址
+					(3)连接socket和通信地址, 使用connect
+					(4)进行通信,使用read/write函数
+					(5)关闭socket，使用close函数
+
+
+	2.3 相关函数的解析
+		(1)socket函数
+	       #include <sys/types.h>          /* See NOTES */
+	       #include <sys/socket.h>
+	
+	       int socket(int domain, int type, int protocol);
+			
+				第一个参数：域/协议族,决定了本地通信还是网络通信
+/*
+		       AF_UNIX / AF_LOCAL   Local communication (同一主机内通信)
+		       AF_INET             IPv4 Internet protocols(不同主机之间)
+		       AF_INET6            IPv6 Internet protocols(暂时用不上)
+*/			
+				第二个参数：通信的类型
+/*			
+       SOCK_STREAM     -提供有序的,可靠的,双向的,面向连接的字节的字节流通信方式
+						基于TCP协议的通信方式
+       SOCK_DGRAM      -提供的不可靠的,非面向连接的数据报通信方式
+						基于UDP协议的通信方式
+*/
+				第三个参数：特殊的协议,默认给0
+					
+			
+			返回值：成功返回i新的socket描述符,失败返回-1
+
+			函数功能：
+				主要用于创建可以实现通信的交流点,也就是socket通信载体；
+
+		(2)通信地址的数据类型
+			a. struct sockaddr类型
+           struct sockaddr {
+               sa_family_t sa_family;
+               char        sa_data[14];
+           }
+
+			-该结构体类型主要用于函数的形参类型,基本不会定义变量使用
+
+
+			b. struct sockaddr_un类型//本地
+     		  #include <sys/un.h>
+
+			struct sockaddr_un{
+              sa_family_t  sun_family; // Address family.
+              char         sun_path[]; // Socket pathname.
+			}
+			-该结构主要用于实现本地通信的通信模型中；
+
+
+			c.struct sockaddr_in类型 //网络
+   		   	 #include <netinet/in.h>
+			struct sockaddr_in{
+              sa_family_t     sin_family;  // AF_INET.
+              in_port_t       sin_port;     //Port number.
+              struct in_addr  sin_addr;     //IP address.
+			}
+			其中 
+				struct in_addr{
+				   in_addr_t  s_addr;//整数类型的ip地址
+				}
+				-该结构体主要用于实现不同主机之间的网络通信模型中;
+
+
+		(3)bind函数
+	       #include <sys/types.h>          /* See NOTES */
+	       #include <sys/socket.h>
+
+	       int bind(int sockfd, const struct sockaddr *addr,
+	                socklen_t addrlen);
+
+			第一个参数：socket描述符,socket函数的返回值;
+			第二个参数：结构体指针,可能需要做类型转换
+			第三个参数：通信地址的大小,使用sizeof计算即可
+
+			函数功能：
+				主要用于绑定socket和具体的通信地址;
+
+
+
+		(4)connect
+    	   #include <sys/types.h>          /* See NOTES */
+    	   #include <sys/socket.h>
+
+    	   int connect(int sockfd, const struct sockaddr *addr,
+	                   socklen_t addrlen);
+
+
+			函数功能：
+				主要用于链接socket和指定的通信地址,参数和返回值参考bind函数。
+
+
+		(5)字节序的转换函数
+       #include <arpa/inet.h>
+       uint32_t htonl(uint32_t hostlong); 
+			=>32 位二进制 主机字节序 转 网络字节序
+       uint16_t htons(uint16_t hostshort);
+			=>16 位二进制 主机字节序 转 网络字节序
+       uint32_t ntohl(uint32_t netlong);
+			=>32 位二进制 网络字节序 转 主机字节序
+       uint16_t ntohs(uint16_t netshort);
+			=>16 位二进制 网络字节序 转 主机字节序
+
+
+		(6)IP地址的转换函数
+       #include <sys/socket.h>
+       #include <netinet/in.h>
+       #include <arpa/inet.h>
+
+       in_addr_t inet_addr(const char *cp);
+			IP地址 字符串类型 => 整数类型
+
+       char *inet_ntoa(struct in_addr in);
+			IP地址 整数类型 => 字符串类型
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

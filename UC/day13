@@ -1,0 +1,323 @@
+/**************************************************************************/
+*															    		  *	
+*								day_13					   				  *	
+*									   									  *
+/**************************************************************************/
+
+
+
+			
+		
+		
+	
+						/*进程间的通信*/
+
+	1. 使用管道实现进程间的通信
+	1.1 基本概念
+		管道本质上就是文件,只是一种比较特殊的文件
+
+		管道分为两种：有名管道 和 无名管道
+		
+		有名管道		-可以用于任意两个进程间的通信；
+		无名管道		-只能用于父子进程之间的通信；
+
+	1.2 使用有名管道实现进程间的通信
+	
+		使用 mkfifo命令/函数来创建有名管道
+
+			如：
+				touch a.txt  => 创建普通文件a.txt
+
+				ls -l a.txt	 => 查看文件的详细信息,文件的类型是 - ,表示普通文件
+
+				echo hello > a.txt
+
+				cat a.txt   显示hello
+
+				/*------------------------------------------*/
+
+				mkfifo a.pipe  创建管道文件
+		 
+				ls -l a.pipe  文件类型为p 表示管道文件,并且拥有 迷の黑色阴影
+
+				echo hello > a.pipe  写入是阻塞的,写不进去 
+				
+				另起终端执行	cat a.pipe		 读取到内容hello 上个终端阻塞解除
+
+
+//			mkfifo函数
+       #include <sys/types.h>
+       #include <sys/stat.h>
+
+       int mkfifo(const char *pathname, mode_t mode);
+
+
+			第一个参数：字符串形式的路径名
+			第二个参数：具体的权限信息,如 0664
+
+		函数功能：
+			主要用于创建一个指定的有名管道文件；
+
+
+
+
+
+
+		注意：
+			管道的特殊性就在于仅仅作为进程间通信的媒介,但是管道本身并不会
+		  存放任何数据；
+
+	
+
+	1.3 使用无名管道实现进程间的通信
+
+
+       #include <unistd.h>
+       int pipe(int pipefd[2]);
+
+
+
+		函数功能；
+			主要用于创建无名管道,提供一个单向的数据通道实现进程间的通信，
+		  通过参数带出两个文件描述符,其中pipefd[0]代表管道的读端
+		  pipefd[1]代表管道的写端
+
+
+
+	2. 使用共享内存实现进程间的通信
+	2.1 基本概念
+		共享内存本质就是一块由系统内核维护的内存空间,而该内存空间可以共享在
+	  两个进程之间，两个进程通过读写该内存区域从而实现通信;
+
+	2.2 通信的模型
+		(1)获取key值,			ftok函数
+		(2)创建/获取共享内存,	shmget函数
+		(3)挂接共享内存			shmat函数
+		(4)使用共享内存
+		(5)脱接共享内存			shmdt函数
+		(6)如果不再使用,则删除,	shmctl函数
+
+
+	2.3 相关函数的解析
+		
+		(1) ftok函数
+
+       #include <sys/types.h>
+       #include <sys/ipc.h>
+       key_t ftok(const char *pathname, int proj_id);
+
+
+		第一个参数：字符串形式的路径名,要求文件存在并且可以访问。
+		第二个参数：项目的编号,要求非0,只取低8位二进制位
+
+		返回值：成功返回生成的key_t值,失败返回-1；
+
+		函数功能：
+			主要用于根据参数的指定来生成一个key值,便于后续函数使用.
+
+
+		注意：
+			使用相同的路径名和相同的项目编号时,最终生成的key值也相同；
+
+
+
+		(2)shmget函数	(/*- allocates a shared memory segment */)
+       #include <sys/ipc.h>
+       #include <sys/shm.h>
+       int shmget(key_t key, size_t size, int shmflg);
+		
+		第一个参数；key值，ftok函数的返回值
+		第二个参数；具体的共享内存大小
+			0	-获取已经存在的共享内存
+		第三个参数：具体的操作标志
+			IPC_CREAT	-如果不存在则创建,存在则打开
+			IPC_EXCL	-与IPC_CREAT搭配使用，如果存在则创建失败
+				0		-获取已经存在的共享内存
+
+		返回值：成功返回共享内存的ID，失败返回-1；
+		
+		函数功能：
+			主要用于创建/获取一个指定的共享内存；
+
+		注意：
+			当使用该函数创建新的共享内存时,需要在第三个参数中指定该共享内存的权限
+		  信息,如：0664,指定的方式为按位或运算;
+
+	
+		(3)shmat函数
+		
+       #include <sys/types.h>
+       #include <sys/shm.h>
+
+       void *shmat(int shmid, const void *shmaddr, int shmflg);
+       
+		第一个参数：共享内存的ID,shmget函数的返回值
+		第二个参数：具体的挂接地址,给 NULL 则由系统选择位置
+		第三个参数：挂接的标志,默认给0即可
+
+		返回值：成功返回挂接的其实地址，失败返回(void*)-1;
+
+
+		函数功能：
+			主要用于将shmid指向的共享内存挂接到当前进程的地址空间中
+
+		(4)shmdt函数
+       #include <sys/types.h>
+       #include <sys/shm.h>	
+       int shmdt(const void *shmaddr);
+	
+		函数功能：
+			主要用于脱接参数指定的共享内存,参数为shmat函数的返回值。
+
+
+
+		(5)shmctl函数
+
+       #include <sys/ipc.h>:
+       #include <sys/shm.h>
+       int shmctl(int shmid, int cmd, struct shmid_ds *buf);
+
+		第一个参数：共享内存的ID，shmget函数的返回值；
+		第二个参数：具体的操作命令
+			IPC_RMID	-删除共享内存,此时第三个参数给NULL即可
+		地三个参数：结构体指针(NULL)
+
+		函数功能：
+			主要用于对指定的共享内存段执行指定的操作；
+
+
+		/*		ipcs -m	可以查看共享内存数量	
+				ipcrm -m shmid 可以删除指定共享内存				
+
+		*/
+
+
+
+
+	2.4 常用的基本命令
+		ipcs -m		表示查看当前系统中存在的共享内存段；
+		ipcrm -m shmid  	表示删除指定的共享内存； 
+
+
+
+
+
+	3. 使用消息队列实现进程间的通信(重点)
+	3.1 基本概念
+		将通信的数据打包成消息,使用两个不同的进程分别发送消息到消息队列中 和 接收
+	  消息队列中的消息,从而实现通信；
+
+
+	3.2 基本模型
+		(1)获取key值,		使用ftok函数;
+		(2)创建/获取消息队列		msgget
+		(3)发送/接收消息 		msgsnd/msgrcv 
+		(4)如果不在使用,则删除	msgctl
+
+	3.3 相关函数的解析
+		
+		(1)msgget函数
+       #include <sys/types.h>
+       #include <sys/ipc.h>
+       #include <sys/msg.h>
+
+       int msgget(key_t key, int msgflg);
+
+		第一个参数：key值,ftok函数的返回值
+		第二个参数：具体的操作标志
+			IPC_CREAT		-如果不存在则创建,存在则打开
+			IPC_EXCL		-与IPC_CREAT搭配使用,如果存在则创建失败
+				0			-获取已经存在的消息队列
+
+		返回值： 成功返回消息队列的ID，失败返回-1
+
+		函数功能：
+			主要用于创建/获取消息队列；
+
+		注意：
+			当创建新的消息队列时,需要在第二个参数中指定权限信息，
+			如0664，指定的方式为按位或运算;
+
+
+
+
+		(2)msgsnd函数
+       #include <sys/types.h>
+       #include <sys/ipc.h>
+       #include <sys/msg.h>
+
+       int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
+
+
+		第一个参数：消息队列的ID,msgget函数的返回值
+		第二个参数：消息的起始地址,该指针指向的消息格式如下：
+
+           struct msgbuf {
+               long mtype;       /* message type, must be > 0 */
+               char mtext[1];    /* message data(可选其他数据类型) */
+           };
+
+		第三个参数：消息的大小
+			//该参数的大小仅仅包括消息内容的大小,不包括消息类型的大小
+		第四个参数：发送的标志,默认给 0，表示发送不出去时阻塞
+			//IPC_NOWAIT   -表示发送不出去时不会产生阻塞
+		函数功能：
+			主要用于想指定的消息队列中发送指定的消息；
+
+
+
+		(3)msgrcv函数
+       #include <sys/types.h>
+       #include <sys/ipc.h>
+       #include <sys/msg.h>
+
+       ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp,
+						int msgflg);
+		
+		第一个参数：消息队列的ID,msgget函数的返回值
+		第二个参数：存放消息的缓冲区首地址
+		第三个参数：期望接受的消息大小
+		第四个参数：期望接受的消息类型
+		/*
+				 0 	-表示始终读取消息队列中的第一个消息
+				>0	-表示始终读取消息对垒中第一个类型为msgtyp的消息
+				<0 	-表示读取消息队列中第一个类型 <= msgtyp绝对值的消息
+					  其中最小类型的消息优先读取;
+		*/				
+
+		第五个参数：具体的接收标志,默认给 0 即可
+
+		返回值：成功返回实际读取的数据大小,失败返回-1；
+	
+		函数功能：
+			主要用于从指定的消息队列中接收消息,并放在指定的缓冲区中；
+		
+
+		(4)msgctl函数
+       #include <sys/types.h>
+       #include <sys/ipc.h>
+       #include <sys/msg.h>
+
+       int msgctl(int msqid, int cmd, struct msqid_ds *buf);
+		
+
+		第一个参数：消息队列的ID，shmget函数的返回值；
+		第二个参数：具体的操作命令
+			IPC_RMID	-删除消息队列,此时第三个参数给 NULL 即可
+		地三个参数：结构体指针(NULL)
+
+		函数功能：
+			主要用于对指定的消息队列执行指定的操作；
+/*
+			ipcs -q		查看存在的消息队列
+			ipcrm -q qid 删除指定的消息队列
+*/
+
+
+
+
+
+
+
+
+

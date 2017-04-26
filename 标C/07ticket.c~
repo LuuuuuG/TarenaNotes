@@ -1,0 +1,19 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<time.h>
+int ticket(int arr[7]){
+	srand(time(0));
+	int num = 0;
+		arr[num] = rand() % 36 + 1;
+}
+
+int main(){
+	int arr[7] = {0};
+	int num = 0,tickets = 0;
+	for(num = 0;num <= 6;num++){
+		tickets = ticket(arr);
+		printf("%d ",tickets);
+	}
+	printf("\n");
+	return 0;
+}

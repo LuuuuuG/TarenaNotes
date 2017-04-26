@@ -1,0 +1,348 @@
+/**************************************************************************/
+*															    		  *	
+*								day_09					   				  *	
+*									   									  *
+/**************************************************************************/
+
+
+
+
+
+
+	1. 文件的关系
+	1.1 chmod/fchmo函数
+       #include <sys/stat.h>
+
+       int chmod(const char *path, mode_t mode);
+       int fchmod(int fd, mode_t mode);
+
+
+	第一个参数：字符串形式的文件路径名/文件描述符
+	第二个参数：具体的新权限,如：0664
+
+
+	函数功能：
+		主要用于修改指定的文件到指定的权限；
+
+
+	1.2 truncate/ftruncate函数(/*重点*/)
+
+       #include <unistd.h>
+       #include <sys/types.h>
+
+       int truncate(const char *path, off_t length);
+       int ftruncate(int fd, off_t length);
+
+	
+	第一个参数：字符串形式的文件路径/文件描述符
+	第二个参数：具体的新长度
+
+	函数功能：
+		主要用于修改指定文件到指定的大小；
+		
+
+	注意：
+		当文件变小时,后面多余数据丢失;当文件变大时,扩展出来的内容读取到的就是'\0'
+	  而文件读写位置的偏移量不会改变；
+
+
+	练习：
+		使用echo hello > a.txt 的方式创建文件a.txt, vi 01chmod_truncate.c文件
+	  使用stat函数获取文件a.txt的权限和大小信息并打印,然后使用chmod和truncate函数修改文件的权限和大小为：0600 和 100， 最后使用stat函数获取修改后的信息并打印；
+
+
+
+	1.3 umask函数
+
+       #include <sys/types.h>
+       #include <sys/stat.h>
+
+       mode_t umask(mode_t mask);
+
+
+
+	函数功能：
+		主要用于设置文件在创建时屏蔽的权限为：参数指定的权限值,返回之前的旧
+	  的屏蔽权限；
+
+
+
+	1.4 再见mmap和munmap函数
+       #include <sys/mman.h>
+
+       void *mmap(void *addr, size_t length, int prot, int flags,
+                  int fd, off_t offset);
+       int munmap(void *addr, size_t length);
+
+	
+	
+	  	  通过建立虚拟地址到文件的映射，
+		  可以/*将对文件的操作转换为对内存地址的操作，*/
+		只需要简单的赋值操作就可以将数据写入到文件中,因此又多了一种读写文件的方式;
+
+
+
+	1.5 其他函数
+		link()		-建立硬链接
+		unlink()	-删除硬链接
+		rename()	-重命名文件
+		remove()	-删除文件
+		...	...
+
+	
+
+
+
+
+
+
+	2. 目录管理
+	2.1 常用的基本操作函数：
+		
+		(1)opendir函数
+	    	#include <sys/types.h>
+    	   	#include <dirent.h>
+
+    	   	DIR *opendir(const char *name);
+    	   	DIR *fdopendir(int fd);
+
+		函数功能：
+			主要用于打开参数指定的目录,成功返回有效的目录指针,失败返回 NULL;
+
+
+
+		(2)readdir函数
+       #include <dirent.h>
+
+       struct dirent *readdir(DIR *dirp);
+
+
+
+		函数功能：
+			主要用于读取参数指定的目录内容,参数为opendir函数的返回值,
+		  读取成功时返回一个有效的结构体指针,失败返回NULL;
+
+
+
+
+           struct dirent {
+				... ...
+
+               unsigned char  d_type;      /* type of file; not supported
+                                              by all file system types */
+               char           d_name[256]; /* filename */
+           };
+
+
+
+		(3)closedir函数
+       #include <sys/types.h>
+
+       #include <dirent.h>
+
+       int closedir(DIR *dirp);
+
+
+		函数功能：
+			主要用于关闭参数指定的目录,参数为opendir函数的返回值;
+
+
+
+
+
+
+	/*
+			类型为4 目录文件		目录为8 表示普通文件		
+	*/
+
+
+
+
+
+	2.2 其他函数
+
+		mkdir() 	-创建目录
+		rmdir()		-删除目录
+		chdir()		-切换目录
+		getcwd()	-获取当前工作目录所在的绝对路径信息
+		... ...
+
+
+
+	
+
+
+	3. 进程的管理
+	3.1 基本概念和基本命令
+
+		程序		-存放在磁盘上的可执行文件;
+		进程		-运行在内存中的程序;
+		同一个程序可以同时对应多个进程;
+
+
+		ps 		-表示查看当前终端启动的进程信息;
+
+/*
+		PID	 进程编号(重点)	 
+		TTY	终端的次要装置号码
+		TIME	消耗CPU的时间
+		CMD		进程的名称(重点)
+*/
+
+
+		ps -aux	-表示查看所有包括其他使用者的进程信息；
+		ps -aux | more  -表示分屏显示所有的进程信息;
+/*
+	USER	-用户名称
+       
+	PID 	-进程号
+
+	%CPU 	-占用CPU的百分比
+
+	%MEM    -占用内存的百分比
+
+	VSZ   	-虚拟内存的大小
+	
+	RSS 	- 物理内存的大小
+
+	TTY      -终端的次要装置号码
+
+	STAT 	-进程的状态信息
+
+	START	-进程的启动时间
+
+   TIME		-消耗的CPU的时间
+	
+  COMMAND	-进程的名称
+	
+	其中进程的主要状态如下(了解)：
+	
+	S	休眠状态，为了减轻CPU的压力
+	s	进程的领导者，下面拥有子进程
+	Z   僵尸进程，已经结束但资源没有回收的进程
+	R	正在运行的进程
+	O	可以运行的进程
+	T	挂起的进程
+	<	优先级比较高的进程
+	N	优先级比较低的进程
+
+	... ...
+*/
+
+
+
+	ps -ef		-表示以全格式的方式显示进程信息
+	ps -ef | more
+
+/*
+	UID 	-用户的id
+    PID 		-进程编号 
+	PPID 	-父进程的编号 
+	C		-占用CPU的百分比 
+	STIME	-启动时间 
+	TTY     -终端的次要装置号码     
+	TIME	-消耗的CPU的时间 
+	CMD		-进程的名称
+*/
+
+		目前主流的操作系统都支持多进程,如果进程A启动了进程B,那么进程A就叫做进程B的
+	父进程,进程B就叫做进程A的子进程。
+
+		当前系统中进程0(系统内部的进程)负责启动进程1(init)和进程2 其它所有进程
+	都是	直接/简介由进程2启动起来的，从而构成了逻辑结构中的树形结构。	
+
+
+		进程号的数据类型虽然是int类型,但是本质上是从0开始,作为进程的唯一标识，
+	操作系统采用延迟重用的策略进行进程号的管理,从而保证在任意时刻进程号都是唯一的。
+
+	
+	kill -9  进程号 	-表示杀死指定的进程
+
+
+
+	3.2 各种ID的获取
+		getpid()	-获取当前进程的编号
+		getppid()	-获取当前进程父进程的编号
+    	   #include <sys/types.h>
+    	   #include <unistd.h>
+
+    	   pid_t getpid(void);
+	       pid_t getppid(void);
+
+		返回值： pid_t 类型
+
+
+		getuid()	-获取当前用户的编号
+		getgid()	-获取当前用户所在用户组的编号
+
+    	   #include <unistd.h>
+    	   #include <sys/types.h>
+	
+    	   uid_t getuid(void);
+
+		返回值： uid_t 类型
+
+/*
+	在底行命令中输入 /+查找内容 可以快速查找
+*/
+	注意:
+		pid_t类型本质就是 int 类型；
+		uid_t类型和gid_t 类型本质就是 unsigned int类型;
+
+	3.3 进程的创建
+		(1) fork 函数
+		
+       #include <unistd.h>
+
+       pid_t fork(void);
+		
+
+	函数功能：
+		主要用于以复制当前正在调用进程的方式来启动一个新进程,而其中新启动的进程
+	  叫做子进程,原来的进程叫做副京城,函数调用成功时父进程返回子进程的进程号，
+	  子进程返回0，函数调用失败时直接返回-1，没有子进程被创建;
+
+
+
+	作业：
+		编程实现打印目录中的所有内容,要求子目录中的内容也要打印，
+
+	参考代码：
+void print(char* path)
+{
+	// .. ..	
+}
+int main()
+{
+	print("../day02");
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

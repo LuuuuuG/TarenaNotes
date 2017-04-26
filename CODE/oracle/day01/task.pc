@@ -1,0 +1,36 @@
+#include<stdio.h>
+exec sql include sqlca;
+exec sql include oraca;
+exec oracle option(oraca=yes);
+int main(){
+	exec sql begin declare section;
+	  char userpasswd[30]="openlab/open123";  
+	  int ids[20];
+	  char names[20][30];
+	  int rids[20];
+	  short indrids[50];
+	exec sql end declare section;
+	exec sql connect:userpasswd;
+	  oraca.orastxtf=1;
+	  exec sql select id,name,region_id into :ids,:names,:rids:indrids
+		  from s_dept;
+	  int i=0;
+	  for(i=0;i<sqlca.sqlerrd[2];i++){
+		printf("%d,%s,%hd\n",ids[i],names[i],indrids[i]);
+		printf("%s\n",oraca.orastxt.orastxtc);
+	  }
+	  
+	exec sql commit work release;
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+

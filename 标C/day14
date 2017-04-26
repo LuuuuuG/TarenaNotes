@@ -1,0 +1,485 @@
+/**************************************************************************/
+*									   *		
+*				day_14					   *	
+*									   *
+/**************************************************************************/	
+
+	
+	
+	
+	
+			/*枚举和联合*/
+
+	//枚举	enum
+	1、枚举也可以用来创建新的数据类型
+	2、枚举类型存储区就是一个整数类型存储区，
+	   这种存储区里应该只能记录几个有限的整数。
+
+	3、声明枚举类型时需要提供一组名称，每个名称对应一个整数。	
+	    这些整数才可以放到枚举类型存储区里。
+	4、声明枚举类型时需要使用 enum 关键字。
+	5、枚举类型中第一个名字对应的整数是0，向后依次递增。
+	6、可以在生命枚举类型时指定某个名称对应的数字，
+           它后面的名称对应的数字也会随着改变。
+
+
+****************
+//枚举类型演示
+#include<stdio.h>
+int main(){
+    enum /*season可以省略*/ {SPRING,SUMMER = 5,AUTUMN,WINTER};  //分别对应0123
+    printf("spring is %d\n",SPRING);
+    printf("summer is %d\n",SUMMER);
+    printf("autumn is %d\n",AUTUMN);
+    printf("winter is %d\n",WINTER);
+    return 0;
+}
+***************
+
+	//联合	union
+	1、联合也可以用来创建新的数据类型。
+	2、联合存储区可以当作多种不同类型存储区使用。
+	3、声明联合的时候需要使用 union 关键字。
+	4、联合中每个变量声明语句表示联合存储区的一种使用方法，
+	    所有子变量的存储区是互相重叠的。
+	5、联合存储区的大小是其中最大子变量存储区的大小。
+
+**************
+//联合演示
+ #include <stdio.h>
+typedef union {     //关键字不同
+    char ch;        //其他类似与结构体
+    int num;    
+}un;     
+
+ int main(){
+    un un1;
+    un1.num = 0;
+    un1.ch = 'a';   //修改ch子存储区 上一个num存储区也受影响
+    printf("un1.num is %d\n",un1.num);
+    return 0;
+ }
+*************
+
+
+
+
+			/*二级指针*/
+	1、记录普通变量地址的指针叫做一级指针。
+	2、二级指针可以记录一级指针的地址。二级指针声明的时候需要写两个*
+	3、二级指针变量名称前加**可以表示捆绑的普通变量存储区。
+	4、二级指针变量名称前加*表示捆绑的一级指针变量存储区。
+	5、二级指针变量名称可以代表它自己的存储区。
+	6、二级指针可以用来代表/*指针数组*/，但是不能代表二维数组。
+
+***********
+//二级指针代表指针数组
+#include <stdio.h>
+
+int main(int argc,char **argv){
+    int num = 0;
+    for (num = 0;num <= argc - 1;num++){
+        printf("%s\n",*(argv + num));
+    }   
+    return 0;
+}
+**************
+
+
+	7、二级指针通常作为函数的形参使用。
+	     它可以让被调用函数修改调用函数的一级指针存储区。
+
+
+*******************
+//二级指针形参演示
+#include <stdio.h>
+void setnull(int **pp_num){
+    *pp_num = NULL;
+}
+int main(){
+    int num = 0;
+    int *p_num = &num;
+    setnull(&p_num);
+    printf("p_num is %p\n",p_num);
+    return 0;
+}
+**************
+
+
+	8、无类型指针使用的时候有可能需要首先转换成二级指针然后再使用。 
+	
+
+【练习】
+	将昨天作业用二级指针无返回值修改。
+
+
+
+	
+			/*函数指针*/
+	
+	
+	1、C语言里函数也有地址。函数名称可以表示函数的地址，
+	2、函数指针用来记录函数的地址，函数指针也需要先声明再使用。
+	3、函数指针声明可以根据函数声明变化得到。
+	4、函数指针也分类型，不同类型的函数指针适合与不同的函数捆绑。
+	5、函数指针可以用来调用函数。
+
+		声明函数指针方法： 返回值类型 /*删去函数名*/(*p_func)(形参) 
+			被捆绑函数： int add(int num1,int num2)
+			 函数指针 ： int (*p_func)(int, int)
+	
+
+***************
+//函数指针演示
+#include <stdio.h>
+int add(int num1,int num2){
+    return num1 + num2;
+}
+int main(){
+    int (*p_func)(int, int) = NULL;     //声明函数指针并初始化
+    printf("add is %p\n",add);
+    p_func = add;           //函数指针和函数捆绑
+    printf("4+9 is %d\n",p_func(4,9));
+    return 0;
+}
+*************
+
+
+
+
+
+	
+			/*回调函数*/
+	1、函数指针可以作为函数的形参使用。
+	2、可以作为实际参数使用的函数叫做回调函数。
+
+
+
+****************************
+//回调函数演示
+#include <stdio.h>
+void print(int *p_num,int size){
+    int num = 0;
+    for (num = 0;num <= size - 1;num++){
+        printf("%d ",*(p_num + num));
+    }   
+}
+
+int main(){
+    int arr[] = {1,2,3,4,5};
+    print(arr,5);
+    printf("\n");
+    return 0;
+}
+/********************
+*	| |         *
+*   改 	| |   进    *
+*	V V         *
+********************/
+#include <stdio.h>
+void print_cb(int *p_num){
+    printf("%d ",*p_num);
+}
+void for_each(int *p_num,int size){ //处理数组每一个存储区
+    int num = 0;
+    for (num = 0;num <= size - 1;num++) {
+        print_cb(p_num + num);
+    }   
+}
+int main(){
+    int arr[] = {1,2,3,4,5};
+    for_each(arr,5);
+    printf("\n");
+    return 0;
+}
+/********************
+*	| |         *
+*   改 	| |   进    *
+*	V V         *
+********************/
+#include <stdio.h>
+void print_cb(int *p_num){
+    printf("%d ",*p_num);
+}
+void for_each(int *p_num,int size,void (*p_func)(int*)){    //处理数组每一个存>储区   
+    int num = 0;
+    for (num = 0;num <= size - 1;num++) {
+        p_func(p_num + num);    //函数名称换为函数指针名称
+    }   
+}
+int main(){
+    int arr[] = {1,2,3,4,5};
+    for_each(arr,5,print_cb);   //函数指针和print_cb函数捆绑
+    printf("\n");
+    return 0;
+}
+
+**********************
+
+
+
+
+
+
+			/*动态内存分配*/
+	1、动态内存分配可以在程序运行的时候临时决定需要分配多少个存储区。
+	2、为了使用动态内存分配需要使用一组标准函数,
+	    为了使用这组标准函数需要包含stdlib.h头文件。
+	
+
+	/*malloc函数*/ 可以动态分配一组连续的字节。
+	1、这个函数需要一个整数类型参数表示要分配的字节个数。
+	2、它的返回值是分配好的第一个字节的地址。如果分配失败返回的是 NULL。
+	3、这个函数的返回值存放在一个无类型指针存储区里，
+             需要转换成有类型指针然后才能使用。
+	
+
+
+			/*动态内存释放*/
+
+	1、不使用的动态分配内存必须还给计算机。
+	
+	/*free函数*/ 可以用来释放动态分配内存
+	1、这个函数需要动态分配内存的首地址作为参数。
+	2、一起分配的内存必须一起释放。
+	3、如果用指针作为参数调用free函数，则函数结束后指针成为野指针，须恢复成空指针。	
+	
+
+
+*****************
+//动态分配内存演示
+#include <stdio.h>
+#include <stdlib.h>
+int main(){
+    int *p_num = (int *)malloc(5 * sizeof(int)); //分配5个int类型的内存
+    //malloc分配的是无类型指针，需要强制类型转换
+    int num = 0;
+    if (p_num){         //分配内存成功
+          for (num = 0;num <= 4;num++){
+                *(p_num + num) = num + 1;
+          }   
+          for (num = 0;num <= 4;num++){
+                printf("%d ",*(p_num + num));
+          }   
+          printf("\n");
+        free(p_num);    //释放内存	
+        p_num = NULL;	//指针恢复成空指针
+    }   
+    return 0;
+}
+*************
+运行结果：
+1 2 3 4 5
+*************
+
+
+
+
+	4、动态分配内存函数可以使用被调用函数动态分配的内存。
+
+
+******************
+//动态内存分配 演示
+#include <stdio.h>
+#include <stdlib.h>
+int *read(void){
+    int *p_num = (int *)malloc(sizeof(int));
+    if (p_num) {
+        printf("plz input a number:");
+        scanf("%d",p_num);
+    }   
+    return p_num;   //如果分配不成功 返回值为NULL
+}
+
+int main(){
+    int *p_num = read();
+    if (p_num) {    //只处理分配成功的情况
+        printf("%d\n",*p_num);
+        free(p_num);    //释放内存
+        p_num = NULL;   //指针恢复成空指针
+    }   
+    return 0;
+}
+********************
+
+
+
+
+【练习】
+
+	编写产生一张彩票，彩票里的所有数字要记录在动态分配内存里，
+	彩票内容要传递给调用函数并打印在屏幕上。
+
+//彩票3.0
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+int *print(void){
+    int *p_num = (int *)malloc(7 * sizeof(int));
+    int num = 0;
+    srand(time(0));
+    if (p_num) {
+        for (num = 0;num <= 6;num++){
+            *(p_num + num) = rand() % 36 + 1;
+        }   
+    }   
+    return p_num;
+}
+
+int main(){
+    int num = 0;
+    int *p_num = print();
+    if (p_num){
+        for(num = 0;num <= 6;num++){
+            printf("%d ",*(p_num + num));
+        }   
+        printf("\n");
+        free(p_num);
+        p_num = NULL;
+    }   
+    return 0;
+}
+
+
+***************
+
+【练习】
+
+	编写函数根据两个已知点的位置计算中间点的位置，
+	中间点的位置记录在动态分配内存里。
+	把中间点位置传递给调用函数并打印。
+
+******************
+//昨天作业 改1.0
+#include <stdio.h>
+typedef struct{
+    int row,col;
+}pt;
+typedef struct{
+    pt pt1,pt2;
+}line;
+/* Mr.Yang
+//计算线段长度平方的函数
+int len2(const line *p_l) {
+    return (p_l->pt1.row - p_l->pt2.row) * (p_l->pt1.row - p_l->pt2.row) + (p_l->pt1.col - p_l->pt2.col) * (p_l->pt1.col - p_l->pt2.col);
+}
+//挑出比较长线段的函数
+void longer(const line *p_l1, const line *p_l2, line **pp_l) {
+    *pp_l = (line *)(len2(p_l1) > len2(p_l2) ? p_l1 : p_l2);
+}*/
+
+void longer(const line *p_l1,const line *p_l2,line **pp_l){
+    int m = (((p_l1->pt1.row - p_l1->pt2.row) * (p_l1->pt1.row - p_l1->pt2.row)) + ((p_l1->pt1.col - p_l1->pt2.col) * (p_l1->pt1.col - p_l1->pt2.col)));
+    int n = (((p_l2->pt1.row - p_l2->pt2.row) *(p_l2->pt1.row - p_l2->pt2.row)) + ((p_l2->pt1.col - p_l2->pt2.col) * (p_l2->pt1.col - p_l2->pt2.col)));
+     *pp_l =(line *)(m > n ? p_l1 : p_l2);
+}
+
+int main(){
+    line l1 = {0},l2 = {0};
+    line *p_l = NULL;
+    printf("plz input 1st line:");
+    scanf("%d%d%d%d",&(l1.pt1.row),&(l1.pt1.col),&(l1.pt2.row),&(l1.pt2.col));
+    printf("plz input 2ed line:");
+    scanf("%d%d%d%d",&(l2.pt1.row),&(l2.pt1.col),&(l2.pt2.row),&(l2.pt2.col));
+    longer(&l1,&l2,&p_l);
+    printf("The longer is (%d, %d),(%d, %d)\n",p_l->pt1.row,p_l->pt1.col,p_l->pt2.row,p_l->pt2.col);
+    return 0;
+}
+
+
+**************
+预习：
+	文件操作
+
+
+作业：
+	编写字符串拷贝函数(新字符串记录在动态分配内存里)
+	函数把新字符串传递给调用函数并打印。
+
+
+/*编写字符串拷贝函数(新字符串记录在动态分配内存里)
+    函数把新字符串传递给调用函数并打印。*/
+【Gang】
+#include <stdio.h>
+#include <stdlib.h>
+    int num = 0;
+char *print(char *p_num){
+    char *p_copy = (char *)malloc(10*sizeof(char));
+    if (p_copy){
+        for(num = 0;num <= 9;num++){
+            *(p_copy + num) = *(p_num + num);
+        }   
+    }   
+    return p_copy;
+}   
+
+int main(){
+    char str[10] = {0};
+    printf("plz input a string:");
+    fgets(str,10,stdin);
+    char *p_num = print(str);
+    if (p_num){
+        for(num = 0;num <= 6;num++){
+            printf("%c ",*(p_num + num));
+        }   
+        printf("\n");
+        free(p_num);
+        p_num = NULL;
+    }   
+    return 0;
+}
+
+//Mr.Yang
+//字符串拷贝作业
+#include <stdio.h>
+#include <stdlib.h>
+char *mystrcpy(char *str){
+    char *p_tmp = str,*p_dest = NULL;
+    char *p_tmp1 = NULL;
+    int cnt = 0;
+    //计算字符串所占空间
+    while (*p_tmp) {    //p_tmp指向'\0' 时 *p_tmp = 0
+        cnt++;
+        p_tmp++;    //指针后移
+    }   
+    cnt++;
+    p_dest = malloc(cnt *sizeof(char));
+    if (p_dest){
+        p_tmp = str;    //p_tmp指针和原有字符串第一个存储区捆绑
+        p_tmp1 = p_dest;
+        while(*p_tmp){
+            *p_tmp1 = *p_tmp;
+            p_tmp++;
+            p_tmp1++;
+        }   
+        *p_tmp1 = 0;    //在新字符串末尾加入"\0"
+    }   
+    return p_dest;
+}
+int main(){
+    char *str = mystrcpy("abcdef");
+    if (str){
+        printf("%s\n",str);
+        free(str);
+        str = NULL;
+    }   
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

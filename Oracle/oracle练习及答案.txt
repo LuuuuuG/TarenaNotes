@@ -1,0 +1,150 @@
+一、简单查询语句
+  1.查询表结构
+    s_emp
+    s_dept
+    s_region
+    desc s_emp;
+    desc s_dept;
+    desc s_region;
+  2.查询所有列
+    s_dept
+    select * from s_dept;
+    s_region
+    select * from s_region;
+  3.查询指定列
+    查询s_emp表中的id,first_name,title,salary,dept_id
+    select id,first_name,title,salary,dept_id from s_emp;
+  4.排重
+    列出所有职位类型
+    select distinct title from s_emp;
+  5.使用算数表达式
+    显示每个员工的年工资
+    select id,first_name,12*salary from s_emp;
+  6.使用列的别名
+    年工资用别名显示
+    select id,first_name,12*salary yearsal from s_emp;
+  7.NULL值得处理
+    显示每个员工的年工资(包括提成)
+    select id,first_name,12*salary*(1+nvl(commission_pct,0)/100) yearsal 
+       from s_emp;
+  8.连接字符串
+    first_name||' is a '||title
+    select first_name||' is a '||title from s_emp;
+  9.使用where子句
+    显示工资高于3000的员工 
+    select id first_name,salary from s_emp where salary>3000;  
+    查询'1982-1-1'之后入职的员工
+    select id,first_name,start_date from s_emp
+      where start_date>to_date('1982-1-1','yyyy-mm-dd');
+  10.使用like操作符
+    显示首字母为S的员工姓名和工资
+    select first_name,salary from s_emp
+      where first_name like 'S%';
+    显示第三个字符为'O'的所有员工的姓名和工资
+    select first_name,salary from s_emp
+      where first_name like '__o%';
+  11.在where条件中使用in
+    显示id为1,11,21的员工的信息
+    select id,first_name,salary from s_emp
+      where id in(1,11,21);
+  12.使用is null的操作符
+    显示没有领导的员工的信息
+    select id,first_name,salary,manager_id from s_emp
+      where manager_id is null;
+  13.使用逻辑操作符
+   查询工资高于2000或者职位为Manager的员工，同时还要满足员工的姓名首字符为'J'
+   select id,first_name,salary,title from s_emp
+     where first_name like 'J%' and (salary>2000 or title like '%Manager');
+  14.使用order by 子句
+   按照工资低到高的顺序显示员工的信息
+   select id,first_name,salary from s_emp
+     order by salary;
+   按照部门编号升序、员工的工资降序排序
+   select id,first_name,salary,dept_id from s_emp
+     order by dept_id,salary desc;
+  15.使用列的别名排序
+    按照年薪降序排序
+    select id,first_name,12*salary*(1+nvl(commission_pct,0)/100) yearsal 
+       from s_emp
+         order by yearsal;
+  
+二、复杂的查询语句
+  1.组函数
+  a.显示所有员工中的最高工资和最低工资
+    select max(salary),min(salary) from s_emp;
+  b.显示所有员工的平均工资和工资总和
+    select sum(salary),avg(salary) from s_emp;
+  c.计算员工人数
+    select count(id) from s_emp;
+  d.显示工资最高的员工的first_name,title
+    select first_name,title from s_emp where salary=(
+      select max(salary) from s_emp
+    );
+  e.显示工资高于平均工资的员工
+    select first_name,salary from s_emp where salary > (
+       select avg(salary) from s_emp
+    );
+  2.group by 和having子句
+  a.显示每个部门的平均工资和最高工资
+    select dept_id,avg(salary),max(salary) from s_emp
+      group by dept_id;    
+  b.显示每个部门的每种职位的平均工资和最低工资
+    select dept_id,avg(salary),min(salary) from s_emp
+      group by dept_id,title;        
+  c.显示平均工资低于1500的部门的部门编号和平均工资
+    select dept_id,avg(salary) from s_emp
+      group by dept_id
+        having avg(salary)<1500;
+  
+三、多表查询
+  1.显示员工名称、工资和部门名
+    select e.first_name,d.name d_name,r.name r_name
+       from s_emp e,s_dept d,s_region r
+         where e.dept_id=d.id and d.region_id=r.id;
+  2.显示部门编号为10的部门名、员工和工资
+    select first_name,salary,d.name
+       from s_emp e,s_dept d
+         where e.dept_id = d.id and d.id=10;
+  3.显示各个员工的姓名、工资和工资的级别
+    select first_name,salary,grade
+       from s_emp e,salgrade g
+         where e.salary between g.losal and g.hisal;
+  4.显示员工名称、工资及其所在部门的名称，并按照部门排序
+    select first_name,salary,name
+      from s_emp e,s_dept d
+        where e.dept_id=d.id
+          order by dept_id;
+  5.自连接
+    显示'Mark'的领导的姓名
+    select m.first_name
+       from s_emp e,s_emp m
+         where e.manager_id=m.id
+            and e.first_name='Mark';
+
+四、子查询
+  1.单行子查询
+   显示与‘Mark’同一部门的员工
+   select id,first_name,dept_id from s_emp
+     where dept_id=(select dept_id from s_emp where first_name='Mark');
+  2.多行子查询
+   查询和部门10的职位相同的员工的名字、职位、工资、部门编号
+   select first_name,title,salary,dept_id from s_emp where title in(
+      select distinct title from s_emp where dept_id=10
+   ); 
+  3.多列值查询
+   查询与'Smith'的部门和职位完全相同的所有员工
+   select id,first_name,title,dept_id from s_emp 
+     where dept_id=(select dept_id from s_emp where first_name='Smith') and
+       title=(select title from s_emp where first_name='Smith');
+ 
+
+
+
+
+
+
+
+
+
+
+    

@@ -1,0 +1,11 @@
+#include<stdio.h>
+exec sql include sqlca;
+
+int main(){
+	char userpasswd[30]='openlab/open123';
+	exec sql connect :userpasswd;
+	exec sql drop table testddl_xsy_233; 
+
+	exec sql commit work release;
+	printf("删除成功!\n");
+}

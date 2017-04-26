@@ -1,0 +1,318 @@
+
+
+一、 proc中如何使用sql语句
+	1.select语句 只要在语句前加exec sql,并结合into 使用
+	 exec sql select first_name into :var_name from s_emp
+	   where id=1;
+	2.ddl语句(create drop alter)
+	  dml语句(insert delete update)	
+	  tcl语句(commit rollback savepoint)
+
+	  直接在语句前加exec sql即可
+	ddl中不能使用宿主变量
+
+	--sql.pc
+
+
+
+二、proc中如何使用plsql语句
+	1.使用plsql的语法
+	  exec sql execute
+		begin
+		--这里相当于plsql的匿名块
+		end;
+	  end-exec:
+
+	 在proc预编译时，需要两个选项
+	  --sqlcheck=semantics
+	  --userid=用户名/密码
+
+	  userid的意思是在预编译的时候连接数据库，验证调用的存储过程
+	 或者函数是否存在和合法；	
+
+	2.在proc中调用存储过程
+	  a.写一个存储过程 传入两个参数，然后把两个参数之和存入到第二个参数。
+	  
+		
+		create or replace procedure var_sum(var_a in number,var_b in out number)
+		is
+
+		begin
+			var_b:=var_a+var_b;
+		end;
+		/
+
+
+	
+	  b.写一个proc程序调用存储过程
+
+----------------------
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 int main(){
+  4     exec sql begin declare section;
+  5       char userpasswd[30]="openlab/open123";
+  6       int var_a=233;
+  7       int var_b=17;
+  8     exec sql end declare section;
+  9     exec sql connect:userpasswd;
+ 10       exec sql execute
+ 11         begin
+ 12           var_sum(:var_a,:var_b);
+ 13         end;
+ 14       end-exec;
+ 15       printf("b=%d\n",var_b);
+ 16     exec sql commit work release;
+ 17     return 0;
+ 18 }
+---------------------
+
+
+	3.proc中调用函数
+	  a.设计一个函数，传入两个参数，返回两个数中的较大值
+		create or replace function getmax_cy_233(a in number,b in number)
+		return number
+		is 
+			--临时变量
+		begin 
+		  if a<b then
+		    return b;
+		   end if;
+			return a;
+		end;
+		/
+	  b.写一个proc程序，调用函数
+		
+	
+三、数据库连接
+	1.本地数据库
+	  exec sql connect:用户名/密码；
+	  exec sql connect:用户名 identified by:密码;
+
+	2.远程数据库
+	  需要提供一个描述，描述远程数据库。包括：ip地址、端口号、
+	  oracle数据库的服务ID(服务名)
+		在$ORACLE_HOME/network/admin/tnsnames.ora 文件中已经写好,改一下就可以
+	
+		  --ORACLE_HOME：环境变量 通常为大写  oracle的安装目录
+		  --echo $ORACLE_HOME 输出oracle的安装目录
+		  --echo $PATH 输出系统路径
+	
+
+		端口号：1521
+		  有了远程数据库的描述后，在连接时用using 引入描述
+		exec sql connect:用户名/密码 using:描述变量
+	
+		remotedbcnt.pc
+	
+		如果面对的是多个数据库，可以通过定义标签，然后使用标签表示访问的
+	  是哪个数据库
+
+四、proc中的异常处理
+
+	1.局部异常处理
+	  sqlca.sqlcode 来判断sql语句的执行状态
+	2.proc中的全局异常处理
+	  异常处理的代码只写一次，当出错时自动去找。
+	  exec sql whenever 条件 动作;
+
+	  --条件就是错误的方式 动作就是出错后的处理方式
+	  条件包括：
+	    1)sqlerror		-sql语句出错
+		2)notfound		-没有找到数据
+	  	3)sqlwarning	-sql语句被警告(不太常用)
+
+	  动作包括：
+		1)do 错误处理函数();	-条件发生后，调用函数
+		2)do break;			-推出循环
+		3)continue;			-继续运行
+		4)stop;				-停止执行(不太常用)
+		5)goto 标签;			-跳转到标签位置(不常用)
+
+
+	3.举例
+	  --删除一张不存在的表
+		table_123456      ---??? vi 05sqlerr.pc
+
+
+		-- sql语句出错时 首先向上着全局异常处理 找不到时 再向下找局部异常处理。
+
+	 proc中默认对异常是忽视的 ，出现异常时(sqlerror notfound),向上查找对应的
+	whenever语句，如果找到了，执行动作后继续，如果找不到，不作处理，继续执行下面代码
+
+
+五、proc中的数据处理
+	1.单行单列的查询 用宿主变量解决
+	  exec sql select first_name into :name from s_emp
+  		where id=1;
+
+	2.单行多列 用多个宿主变量/结构体 解决
+	  exec sql select manager_id,first_name into :mid,:name
+	  	from s_emp where id=1;
+	
+	3.多行单列的查询 用数组解决
+	  exec sql select first_name into :names from s_emp;
+
+	4.多行多列的查询 用多个数组/结构体数组/游标解决
+	  exec sql select id,first_name into :ids,:names from s_emp;
+
+	  a.用结构体解决单行多列的查询问题
+	 	select1.pc   --vi 06select1.pc
+
+	  b.用结构体数组解决多行多列的查询问题
+		--vi 07select2.pc
+	
+	  c.用游标解决多行多列的查询问题
+		 游标变成的步骤：
+			1)声明游标
+				exec sql declare 游标名 cursor for select语句
+			2)打开游标
+				exec sql open 游标名;
+			3)提取数据
+				exec sql fetch 游标名 into :宿主变量;
+			4)关闭游标
+				exec sql close 游标名;
+
+			--vi 08select3.pc
+	  注意：游标在fetch数据时需要使用循环 循环推出的条件用 
+		  exec sql whenever notfound do break;
+		
+
+	有一种个数的游标，叫做滚动游标。滚动游标可以直接跳到任何一行(不常用)
+		滚动游标在用法上和普通游标的区别：
+	  1.声明时,scroll cursor
+		  exec sql declare 游标名 scroll cursor for select语句;
+			
+	  2.fetch时，滚动游标有多种方式都去数据
+		  fetch first	--取第一条数据	
+		  fetch last 	--取最后一条数据
+	  	  fetch next	--取下一条数据
+		  fetch prior	--取上一条数据
+		  fetch absolute n --取第n条
+		  fetch current --取当前数据
+	
+		exec sql fetch 游标名 into :宿主变量
+			
+			--vi 09select4.pc			
+
+
+
+
+六、动态SQL
+	  普通编程	动态编程
+	普通编程，所有的代码在编译的时后就已经确定了，
+	动态编程就是代码在编译时没有确定，在运行时由传入的参数决定。
+	 
+	动态sql就是sql语句只有在运行时，通过参数传入确定。
+	proc中的动态sql有以下几种：
+	1.非select语句，没有占位符(没有宿主变量)
+	  (占位符可以给sql语句传递参数)
+	  char strsql[100]="create table test(id number,...)";
+	  exec sql execute immediate :strsql;
+	2.非select语句，有占位符
+	   1)使用prepare命令准备sql语句
+		exec sql prepare s from :strsql;
+	   2)使用execute 命令执行sql语句
+		exec sql execute s using:宿主变量;
+		e.g.
+		char strsql[100]="insert into ... values(:b0,:b1,..)";
+		exec sql prepare s from :strsql;
+		exec sql execute s using :宿主变量;
+
+	3.select 语句
+	  	char strsql[100]="select ... from ... where id>:b0";
+		exec sql prepare s from :strsql;
+		exec sql declare 游标 cursor for s;	
+
+
+
+
+
+	 练习：
+		1) 不带占位符的非查询操作 建表
+			--vi 10dsqlA.pc
+		2) 带占位符的非查询操作 insert
+			--vi 11dsqlB.pc
+		3）select 语句
+			--vi 12dsqlC.pc
+
+	
+
+
+
+
+
+
+	练习：编写一个proc程序，实现如下功能：
+		1.创建表 包含三个字段，分别和s_emp表中
+	id,first_name,salary类型相同
+		2.查询表s_emp表中所有员工的id,first_name,salary,分别放入三个数组，
+	  并将数据循环写入到新建的表中
+		3.使用游标，读取新表中的数据并输出。
+	
+	
+----------------------------
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 struct emp{
+  4     int id;
+  5     char name[30];
+  6     double sal;
+  7 };  
+  8 int main(){
+  9     exec sql begin declare section;
+ 10       char userpasswd[30]="openlab/open123";
+ 11       int ids[50];
+ 12       char names[50][30];
+ 13       double sals[50];
+ 14       struct emp em;
+ 15     exec sql end declare section;
+ 16     exec sql connect:userpasswd;
+ 17       //建表 
+ 18       exec sql create table testproc_xsy_233(
+ 19         id number primary key,
+ 20         name varchar2(30),
+ 21         sal number
+ 22               );
+ 23       //查询  
+ 24       exec sql select id,first_name,salary into
+ 25           :ids,:names,:sals from s_emp;
+ 26       int i=0;
+ 27       int counts=sqlca.sqlerrd[2];
+ 28       for(i=0;i<counts;i++){
+ 29         exec sql insert into testproc_xsy_233 values(
+ 30                 :ids[i],:names[i],:sals[i]);
+ 31         exec sql commit;
+ 32       } 
+ 33       //用游标查表
+ 34       exec sql declare empcur cursor for
+ 35           select * from testproc_xsy_233;
+ 36       exec sql open empcur;
+ 37       exec sql whenever notfound do break;
+ 38       while(1){
+ 39         exec sql fetch empcur into :em;
+ 40         printf("%2d %s %lf\n",em.id,em.name,em.sal);
+ 41       } 
+ 42       exec sql close empcur;
+ 43 
+ 44     exec sql commit work release;
+ 45     return 0;
+ 46 }
+
+----------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

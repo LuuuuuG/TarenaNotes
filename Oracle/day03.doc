@@ -1,0 +1,521 @@
+/**************************************************************************/
+*															              *	*							  day_03	                                  *	
+*									                                      *
+/**************************************************************************/
+
+
+
+
+		3.4 约束
+		  3.4.1 概念
+			对数据库表中的字段进行限制
+		
+		  3.4.2 具体的约束类型
+			1) 主键约束 primary key
+				不允许重复(值是唯一的) 非空
+				一个表中只能有一个主键
+
+			2) 唯一约束 unique
+				不允许重复
+				一个表中可以存在多个唯一约束
+
+			3) 检查约束 check
+				值必须符合检查条件
+
+			4) 非空约束 not null
+				不允许为空
+
+			5)外键约束 foreign key references
+				表之间的关系
+				一个表中的某个字段的值必须来自于另一张表某个字段的值
+				或者为null
+
+		3.4.3 实现约束的方式
+			1) 列级约束
+				约束直接在字段后添加
+			2) 表级约束
+				表中的所有字段都定义完后,用都好隔开在最后添加
+
+
+		  <1>主键约束
+			a.系统自动提供约束名 (列级约束)
+			create table testcons_xsy_233(
+				id number primary key,
+				name varchar2(25)
+			);
+			insert into testcons_xsy_233 values(1,'test1');
+
+			insert into testcons_xsy_233 values(1,'test1');
+			//或者命令行中敲 '/'表示执行上一条命令
+			//ERROR：ORA-00001: unique constraint (OPENLAB.SYS_C0022090) violated
+
+			insert into testcons_xsy_233 values(null,'test1');
+			//ERROR:ORA-01400: cannot insert NULL into 			 	
+			//("OPENLAB"."TESTCONS_XSY_233"."ID")
+			insert into testcons_xsy_233 values(2,null);
+
+			delete from testcons_xsy_233;//删除表内容
+			drop table testcons_xsy_233;//删除表
+
+			b. 自己给约束起名字 (列级约束)
+			字段名 数据类型 constraint 约束名 约束类型
+			create table testcons_xsy_233(
+				id number constraint testcons_xsy_233_id_pk primary key,
+				name varchar2(25)
+			);
+			insert into testcons_xsy_233 values(1,'test1');
+			insert into testcons_xsy_233 values(1,'test1');
+
+			c.表级主键约束
+			create table testcons_xsy_233(
+				id number ,
+				name varchar2(25),
+				primary key(id) 
+			);
+			
+
+			  联合主键(把多个字段联合起来做主键)
+			  联合主键只能通过表级约束的方式设置
+			create table testcons_xsy_233(
+				id number ,
+				user_id number,
+				name varchar2(25),
+				primary key(id,user_id)
+			);
+			insert into testcons_xsy_233 values(1,1,'test1');
+			insert into testcons_xsy_233 values(1,2,'test1');
+			insert into testcons_xsy_233 values(2,1,'test1');
+			insert into testcons_xsy_233 values(1,1,'test1');//error
+
+		/*实际开发中很少使用联合主键，如果有这种业务需求，添加一个列作为主键*/
+
+		<2>唯一、非空、检查约束
+			非空约束没有表级约束
+			drop tabel testcons_xsy_233;
+			create table testcons_xsy_233(
+				id number primary key,
+				user_id varchar2(20) unique,
+				name varchar2(25) not null,
+				salary number(11,2) check(salary >= 1720)
+			);
+			insert into testcons_xsy_233 values(1,'1123581321','xushaoyuan',250);
+	
+			insert into testcons_xsy_233 values(1,'1123581321',null,2500);
+
+			insert into testcons_xsy_233 values(1,'1123581321','xushaoyuan',2500);
+
+			insert into testcons_xsy_233 values(2,'1123581321','xushaoyuan',2500);
+
+			insert into testcons_xsy_233 values(1,'31415926','xushaoyuan',2500);
+
+
+
+			唯一、检查约束的表级实现
+			drop table testcons_xsy_233;
+			create table testcons_xsy_233(
+				id number primary key,
+				user_id varchar2(20) ,
+				name varchar2(25) not null,
+				salary number(11,2), 
+				[constraint testcons_xsy_233_user_id_un] unique(user_id),
+				[constraint testcons_xsy_233_sal_ck] check(salary>=1720)
+				/* 起名可以省略 */
+			);
+			如果使用的是联合主键、联合唯一、检查约束中着级多个字段这几种情况，
+		  需要使用表级约束。
+
+	
+		<3> 外键约束
+			1) 概念
+				一个表的字段值，要受限于另外一张表的字段值
+				主表(父表)：字段被引用的表
+				从表(子表)：地难以了外键约束(数据来源于主表对应的字段值,或者为null)
+
+			2) 建表
+				先创建主表，在创建从表
+				除非在创建表时不考虑外键约束，在表创建完成后添加
+			  	create table parent_lg_88(
+					id number primary key,
+					name varchar2(25) not null
+				);
+				
+				create table child_xsy_233(
+					id number primary key,
+					name varchar2(25) not null,
+					pid number constraint C_pid_p_id_fk references
+					 parent_lg_88(id)
+				);
+
+			3) 插入数据
+				先向主表写入数据，再向从表写入或者从表中外键设置为null
+				insert into child_xsy_233 values(1,'test1',1); //违反约束
+				insert into parent_lg_88 values(1,'Sales');
+				insert into child_xsy_233 values(1,'test1',1);
+				insert into child_xsy_233 values(2,'test1',null);
+
+			4) 删除或修改时，不能造成子表中数据孤立
+				delete from parent_lg_88 where id = 1;
+				update parent_lg_88 set id = 2 where id = 1;
+				update child_xsy_233 set pid = 2 where pid is null;
+
+				以上三条语句都违反了约束，无法执行		
+
+
+			5) 删除表
+				先删子表 后删主表
+				drop table child_xsy_233;
+				drop table parent_lg_88;
+
+				先去掉约束，再删除表
+				drop table 表名 cascade constraints;
+
+				删除主表
+				drop table parent_lg_88 cascade constraints;
+				drop table child_xsy_233 cascade constraints;
+
+			6) 级联删除和级联置空
+			  a.级联删除：on delete cascade
+
+			  	create table parent_lg_88(
+					id number primary key,
+					name varchar2(25) not null
+				);
+
+				insert into parent_lg_88 values(1,'Sales');
+				insert into parent_lg_88 values(2,'Admin');
+				commit;
+				
+				create table child_xsy_233(
+					id number primary key,
+					name varchar2(25) not null,
+					pid number,
+				     foreign key(pid) references parent_lg_88(id)
+					on delete cascade
+				);
+				
+				insert into child_xsy_233 values(1,'test1',1);
+				insert into child_xsy_233 values(2,'test1',1);
+				insert into child_xsy_233 values(3,'test1',2);
+				insert into child_xsy_233 values(4,'test1',2);
+				insert into child_xsy_233 values(5,'test1',2);
+
+				commit;
+				select * from parent_lg_88;
+				select * from child_xsy_233;
+
+				delete from parent_lg_88 where id = 1; 
+/*-----------------对应的子表-----------------*/
+	ID NAME 			    PID
+------ ---------------------- ----------
+	 3 test1			      2
+	 4 test1			      2
+	 5 test1			      2
+
+
+
+
+			  b.级联置空：on delete set null
+			删表：
+				drop table parent_lg_88;
+				drop table child_xsy_233;
+
+			  	create table parent_lg_88(
+					id number primary key,
+					name varchar2(25) not null
+				);			  
+
+				create table child_xsy_233(
+					id number primary key,
+					name varchar2(25) not null,
+					pid number,
+				     foreign key(pid) references parent_lg_88(id)
+					on delete set null
+				);
+
+				insert into parent_lg_88 values(1,'Sales');
+				insert into parent_lg_88 values(2,'Admin');
+				commit;
+
+				insert into child_xsy_233 values(1,'test1',1);
+				insert into child_xsy_233 values(2,'test1',1);
+				insert into child_xsy_233 values(3,'test1',2);
+				insert into child_xsy_233 values(4,'test1',2);
+				insert into child_xsy_233 values(5,'test1',2);
+
+				commit;
+				select * from parent_lg_88;
+				select * from child_xsy_233;
+			
+				delete from parent_lg_88 where id = 1;
+/*-----------------对应的子表-----------------*/
+	ID NAME 			    PID
+------ ---------------------- ----------
+	 1 test1
+	 2 test1
+	 3 test1			      2
+	 4 test1			      2
+	 5 test1			      2
+
+
+
+
+
+
+
+
+	四、数据库的其他对象和分页
+	  4.1 数据库的其他对象
+ 		<1>. 序列(用来产生主键的值)  (Oracle)
+		  sequence  --创建用于测试序列的表
+			create table fuckseq_xsy_233(
+				id number primary key,
+				name varchar2(25) not null
+			);
+	
+		  1) 建立序列的语法
+			create sequence 序列名;
+			create sequence fuckseq_xsy_id;
+
+		  2)使用徐累 主键的最大值10^27
+			currval:	当前值
+			nextval:	下一个值		
+			至少使用过一次nextval以后，才能使用currval
+		
+			序列名.nextval  序列名.currval
+
+			insert into fuckseq_xsy_233 values(
+			fuckseq_xsy_id.nextval,
+			'shit'||fuckseq_xsy_id.currval
+			);
+
+			commit;
+			select * from fuckseq_xsy_233;
+			
+		  3)删除序列
+			drop sequence 序列名;
+			drop sequence fuckseq_xsy_id;
+
+
+		  4)创建一个复杂的序列
+			user_sequences; 
+			desc user_sequences;
+    		
+			select sequence_name from user_sequences
+			where sequence_name like '%fuck%';
+
+			
+			create sequence fuckseq_xsy_id
+				increment by 5
+				start with 5
+				minvalue 5
+				maxvalue 100
+				cache 3;
+
+
+				insert into fuckseq_xsy_233 values(
+					fuckseq_xsy_id.nextval,
+					'shit '||fuckseq_xsy_id.currval
+				);
+
+				commit;
+				select * from fuckseq_xsy_233;
+
+				序列和表是相互独立的，一个序列可以应用到多个表
+
+
+		<2>.索引(index)
+			1)作用：提高查询效率 加速查询
+				用创建时的 空间+时间 换查询的 时间
+			  索引会消耗大量的空间和时间
+			
+			2) 系统会自动 在唯一性字段上建立索引
+				create index 索引名 on 表名(字段);
+				
+				--测试索引的表
+				create table fuck_index(
+					id number primary key,
+					name varchar2(20)
+				);
+				
+				--创建一个序列
+				create sequence fuck_index_id;
+			
+				--测试序列
+				insert into fuck_index values(
+					fuck_index_id.nextval,'shit-o-'||
+					fuck_index_id.currval
+				);
+				--循环写入数据
+				begin		
+					for var in 1..10000 loop
+						insert into fuck_index values(
+							fuck_index_id.nextval,'shit-o-'||
+							fuck_index_id.currval
+						);
+						commit;
+					end loop;
+				end;
+				/
+				
+				--查看
+				select * from fuck_index;
+
+			3) 手动添加索引
+				create index 索引名 on 表名(字段);
+				create index fuckind_name on fuck_index(name);
+
+
+			4)删除索引
+				drop index 索引名;
+		
+
+		<3>. 视图(view)
+			视图本质上就是一条SQL语句
+			所以相对视图对应的数据 视图的空间可以忽略不计
+			create table emp_xsy_233 as select * from s_emp;
+			//备份s_emp表到emp_xsy_233表中
+
+			
+			a.创建视图
+				create or replace view 视图名 as select语句;			
+
+			 create or replace view myview_emp
+			 as select id,first_name from s_emp;
+			//可以选择只添加部分数据到视图中 
+					
+				
+			b. 操作视图
+			  select * from myview_emp;
+			  delete from myview_emp where id = 25;
+			//对视图的操作就是对原表的操作 删视图的数据 同样会删原表的数据
+		
+				对视图执行的dml(insert\delete\update) 就是改变原表的数据
+			c.作用
+			  可以对同一份物理数据，做不同的表现
+
+
+	4.2 分页
+			C/S 客户端/服务器
+			B/S	浏览器/服务器
+
+		oracle 		rownum(伪列)
+		sqlserver 	top
+		mysql 		limit	
+					
+	  1) 把s_emp表中的第一页数据显示出来 每页显示5行
+
+		--select rownum,first_name,salary from s_emp;
+	
+		--select rownum,first_name,salary from s_emp
+			where rownum < 6;
+
+	  2) 把s_emp表中的第二页数据显示出来 每页显示5行
+
+		--select rownum,first_name,salary from s_emp
+			where rownum > 5 and rownum < 11;// no rows selected
+		
+			使用rownum时，只要有一条不符合条件就不再执行
+
+		--select * from
+			(select rownum r_id,first_name,salary from s_emp
+			  where rownum < 11)
+				where r_id > 5;
+
+	  3)按照工资降序排序，显示第二页数据,每页5条	
+
+		--select * from
+			(select rownum r_id,first_name,salary from s_emp
+			  where rownum < 11 
+				order by salary desc)
+				where r_id > 5;
+
+			//先分页在排序
+
+		--select * from(
+			select rownum r_id,first_name,salary from 
+			(select first_name,salary from s_emp
+			  order by salary desc)
+				where rownum < 11)
+				where r_id > 5;
+
+			//先排序 在分页 三层嵌套
+
+		第n页，每页m行
+
+		--select * from(
+			select rownum r_id,first_name,salary from 
+			(select first_name,salary from s_emp
+			  order by salary desc)	where rownum < n*m+1)
+				where r_id > (n-1)*m;
+
+
+
+	Oracle总结：
+		一、数据库介绍
+			sql：
+			select：
+			ddl：create drop alter
+			dml:insert delete update
+			tcl:commit rollback savepoint
+	
+		二、select
+		  1. select..from
+			单列
+			多列
+			全部
+			数学运算
+			列的别名 [as] ""
+			字符串 '' ||
+			排重 distinct
+			null值的处理  nvl
+		  2. where子句
+			 > < >= <= = !=/<>/^=
+			between and 闭区间
+			like 	模糊查询 %_ 'S\_%' escape'\'
+			in 		列表
+			and or not
+			对立面
+
+		  3. order子句
+			order by 排序规则(字段) 排序方式(asc desc)
+			多列排序
+			null值 按最大值处理
+
+		  4. 单行函数
+			字符串
+			数学
+			日期 date
+			类型转换 to_char to_date
+			函数嵌套
+
+		  5. 表连接
+			内连接
+			外链接
+		
+			等值连接
+			非等值连接
+			
+			  自连接		--可以用子查询替换
+		
+		  6. 组函数和分组
+			count max min sum avg
+			group by
+			having			
+
+		  7. 子查询
+
+
+		三、表操作
+
+		四、数据库
+
+
+
+
+
+
+
+
+
+
+

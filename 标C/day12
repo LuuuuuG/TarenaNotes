@@ -1,0 +1,500 @@
+/**************************************************************************/
+*									   *		
+*				day_12					   *	
+*									   *
+/**************************************************************************/
+
+
+	一、预处理指令
+	二、宏操作符
+	三、条件编译
+	四、多文件编程
+
+
+
+
+		
+			/*一、预处理指令*/
+	1、#define预处理指令用来定义宏。
+	2、宏可以用来给数字起名字。
+
+***********
+//宏演示1
+#include <stdio.h>
+#define     PI      3.14f
+int main(){
+    int radius = 0;
+    printf("plz input radius:");
+    scanf("%d",&radius);
+    printf("%g\n",2*PI*radius);
+    return 0;
+}
+*********************
+
+	3、宏名称通常都是大写的。并且没有空格
+	4、用宏给数字起名字的语句不能包含复制操作符。
+	5、可以在编译命令中使用-D选项定义宏。
+		
+		【e.g.】gcc -DSIZE=5 02hong.c
+
+
+	6、程序中有些数字在编写时无法确定，只有在编译的时候才知道。这种数字就应该采用宏表示。
+
+	7、宏还可以给计算公式起名字
+		用宏的参数表示计算公式里的未知数字。
+
+************
+//宏演示2
+#include <stdio.h>
+#define     PI      3.14f
+#define     CIRCLE(r)   2 * PI * r
+int main(){
+    int radius = 0;
+    printf("plz input radius:");
+    scanf("%d",&radius);
+    printf("%g\n",CIRCLE(radius));
+    return 0;
+}
+**************
+
+	8、宏的参数不一定代表数字，所以它没有类型名称。
+	9、宏不可以使用自己的存储区和函数进行数据传递。
+	10、宏没有形参也没有用来存放返回值的存储区。
+	11、能当作数字使用的宏必须编写成表达式。
+	12、宏的参数代表的就是函数的存储区，可以直接修改内容。
+*************
+//宏演示3
+#include<stdio.h>
+#define     ABS(n)      n >= 0 ? n : 0 - n
+#include<stdio.h>
+#define     ABS(n)      n >= 0 ? n : 0 - n
+#define     NEG(n)      n = 0 - n
+void neg(int *p_num){           //利用指针形参跨函数使用存储区
+    *p_num = 0 - *p_num;
+}
+
+int abs(int num){
+    if(num >= 0){ 
+        return num;
+    }   
+    else{
+        return 0 - num;
+    }   
+}
+int main(){
+    int num = 0;
+    printf("plz input a num:");
+    scanf("%d",&num);
+    printf("abs(num) is %d\n",abs(num));
+    printf("ABS(num) is %d\n\n",ABS(num));
+    neg(&num);
+    printf("NEG(num) is %d\n",num);
+    NEG(num);
+    printf("NEG(num) is %d\n",num);
+    return 0;
+}
+
+*****************
+	
+
+【练习1】
+	编写一个宏计算两个整数相减的结果。
+#include <stdio.h>
+#define     SUB(a,b)    a - b
+int main(){
+    int a = 0,b = 0;
+    printf("plz input two numbers:");
+    scanf("%d%d",&a,&b);
+    printf("result is %d\n",SUB(a,b));
+    return 0;
+}
+			/*    gcc -E 文件名 查看编译器运行步骤	*/
+	13、因为宏存没有储区用来存放返回值，所有不能保证优先计算宏内部的操作符。
+	   所以能当作数字使用的宏必须写在小括号里。(保证宏的优先级)
+
+***********
+#include <stdio.h>
+#define     SUB(a,b)    ((a) - (b))
+int main(){
+    printf("result is %d\n",SUB(10,7));
+    printf("result is %d\n",20 - SUB(10,7));
+    printf("result is %d\n",SUB(20,10 - 7));
+    return 0;
+}
+************
+
+	14、因为宏没有形参，所有不能保证优先计算参数内部的操作符。
+	   所以能当作数字使用的宏参数必须写在小括号里。(保证宏的优先级)
+
+【练习】
+
+	用宏编写计算一个数的平方
+#include <stdio.h>
+#define     SQU(num)        ((num) * (num))
+
+int main(){
+    int num = 5;
+    printf("10^2 = %d\n",SQU(10));
+    printf(" (++num) * (++num) =  %d\n",SQU(++num)); // 7 * 7
+    return 0;
+
+}
+
+	15、不要把自增或自减的结果作为宏的参数使用。
+
+
+
+
+***********************************
+
+			/*二、宏操作符*/
+
+	1、#是一个宏操作符，它可以把宏的参数转换成字符串字面值。
+
+	2、##也是一个宏操作符，它可以把一个代表表示符的参数和其他连接成为新的标识符
+
+//宏操作符演示
+#include<stdio.h>
+#define     STR(n)      #n
+#define     LOCAL(n)    l_##n
+int main(){
+    STR(2 + 3);     // int num = 0;
+    int num = 0;
+    int LOCAL(num) = 0; //int l_num = 0;
+    return 0;
+}
+
+
+
+********************
+
+
+
+			/*三、条件编译*/
+
+	1、条件编译可以在编译的时候从几组语句中选择一组编译，忽略其他组。
+
+	#ifdef/#ifndef...#else...#endif
+
+	以上结构可以在编译时根据一个宏是否被定义过从粮足语中选择一组编译。
+	
+	如果最前面的预处理指令选择#ifdef就表示如果它后面宏被定义过时，编译前一组语句，否则编译后一组语句。
+
+	如果选择#ifndef刚好相反。
+
+//条件编译演示
+#include<stdio.h>
+int main(){
+#ifdef    YI
+    printf("1\n");
+#else    
+    printf("2\n");
+#endif
+    return 0;
+}
+
+**********************
+
+【练习】
+	编写点菜程序：
+	1表示龙虾，2表示小鸡炖蘑菇。
+/*点菜程序：
+    1表示龙虾   2表示小鸡炖蘑菇
+    赵 1 无 2 真没有
+    其他1 有 2 无
+*/
+#include<stdio.h>
+int main(){
+    int order = 0;
+    printf("请点菜：");
+    scanf("%d",&order);
+#ifdef  ZHAO
+    if (order == 1){ 
+        printf("没有\n");
+    }   
+    else{
+        printf("真没有\n");
+    }   
+#else
+    if (order == 1){ 
+    printf("有\n");
+    }   
+    else{
+    printf("没有\n");
+    }   
+#endif
+    return 0;
+}
+
+
+****************************
+
+
+	2 #if...#elif(任意多次)...#else...#endif
+	  以上结构可以根据任意逻辑表达式从多组语句中选择一组编译。
+
+
+
+【练习】
+	过季商店	8折
+	普通商店	原价
+	精品商店	1.2
+
+打印当前商店的折扣
+//条件编译演示2
+#include<stdio.h>
+
+int main(){
+#if     defined(GONGCHANG)      //将宏名称转换成布尔值
+    printf("80%%\n");
+#elif   !defined(GONGCHANG) && !defined(JINGPIN)
+    printf("100%%\n");
+#else
+    printf("120%%\n");
+#endif
+    return 0;
+}
+********************
+gcc 09cond.c
+./a.out
+运行结果：100%
+
+gcc -DGONGCHANG 09cond.c
+./a.out
+运行结果：80%
+
+gcc -DJINGPIN 09cond.c
+./a.out
+运行结果：120%
+
+*********************
+
+
+
+			/*四、多文件编程*/
+
+	1、多文件编程时，每个文件里可以包含多个函数，一个函数只能属于一个文件。
+	
+           多文件编程步骤：
+		(1).把所有函数分散在多个不同的源文件里
+		  (主函数通常单独放在一个文件里)
+
+		(2).为每个源文件白哪些配对的头文件，
+		    所有不分配内存的内容都可以写在头文件里,
+		    至少应该包含配对源文件里的所有函数声明。
+		   (主函数所在的文件不需要配对的头文件)
+
+		(3).为每个源文件包含必要的头文件(配对头文件是必要头文件,
+		    如果源文件里使用了头文件中声明的函数则它也是必要头文件)	
+
+
+	2、可以在gcc命令后列出所有源文件名称，用这种方法可以编译多文件程序。
+
+//多文件编程演示 
+//10duo.c
+#include <stdio.h>
+#include "11add.h"
+int main(){
+    int num = add(2,6);
+    printf("num is %d\n",num);
+    return 0;
+}
+
+//11add.c
+#include "11add.h"
+int add(int num,int num1){
+    return num + num1;
+} 
+
+//11add.h
+int add(int,int);
+
+
+	
+	
+	3、可以把多文件程序的编译过程记录在Makefile里，
+	   然后使用make工具根据Makefile文件内容对多文件程序进行编译。
+
+	4、应该把头文件内容包含在预处理指令中，
+	   这样可以保证不论源文件中多少次包含头文件都只会编译一次。
+//11add.h
+#ifndef     __11ADD_H__
+#define     __11ADD_H__
+int add(int,int);   
+#endif  //__11ADD_H__
+
+
+
+	5、头文件里使用的宏名称应该根据文件路径得到。
+
+【练习】
+	编写函数从键盘得到一个整数，并把这个整数传递给调用函数
+
+	要求用多文件编程方式实现。
+
+
+//多文件编程
+//12num.c
+#include <stdio.h>
+#include "12get.h"
+int main(){
+    int num = print();
+    printf("num is %d\n",num);
+    return 0;
+}
+
+//12get.c
+#include <stdio.h>
+#include "12get.h"
+int print(void){
+    int num = 0;
+    printf("plz input a number:");
+    scanf("%d",&num);
+    return num;
+}
+
+//12get.h
+#ifndef     __12GET_H__
+#define     __12GET_H__
+int print(void);
+#endif
+
+
+
+
+	【tips】
+		如果一个源文件里希望使用另外一个源文件里声明的全局变量就需要使用
+	extern 关键字再次声明那个变量。
+
+		2、使用 extern 关键字声明变量的语句不会分配内存。
+			(可以转移到头文件中)
+
+
+//多文件编程  改~
+//12num.c
+#include <stdio.h>
+#include "12get.h"
+//extern int num;     //一个源文件想使用另外一个源文件的全局变量,需要再次声明。
+			(可以转移到头文件中)
+int main(){
+    print();
+    printf("num is %d\n",num);
+    return 0;
+}
+
+//12get.c
+#include <stdio.h>
+#include "12get.h"
+int num;		//改为全局变量	
+void print(void){
+    printf("plz input a number:");
+    scanf("%d",&num);
+}
+
+//12get.h
+#ifndef     __12GET_H__
+#define     __12GET_H__
+extern int num;		
+int print(void);
+#endif	   //__12GET_H__
+
+
+
+*************************************
+预习：
+	结构体、枚举和联合。
+
+作业：
+	编写宏实现字符大小写之间的转换。
+
+//宏编程
+#include<stdio.h>
+#define     SWAP1(ch)   ch >= 'a' && ch <= 'z' ? ch + 'A' - 'a' : 0 
+#define     SWAP2(ch)   ch >= 'A' && ch <= 'Z' ? ch + 'a' - 'A' : 0
+int main(){
+    char ch = 0;
+    printf("plz input a char:");
+    scanf("%c",&ch);
+    if (ch >= 'a' && ch <= 'z'){
+        printf("%c\n",SWAP1(ch));
+    }   
+    else if (ch >= 'A' && ch <= 'Z'){
+        printf("%c\n",SWAP2(ch));
+    }
+    else{
+	printf("ERROR\n");
+    }   
+    return 0;
+}
+
+//Mr.Yang
+#include <stdio.h>
+#define     CHR(ch)     ((ch) >= 'a' && (ch) <= 'z' ? (ch) +'A' -'a' : (ch) - 'A' +'a')
+int main(){
+    char ch = 0;
+    printf("plz input a char:");
+    scanf("%c",&ch);
+    printf("Change after is: %c\n",CHR(ch));
+    return 0;
+}
+
+
+//多文件编程
+//tra.c
+#include <stdio.h>
+#include "tra.h"
+char ch; 
+void print(void){
+    printf("plz input a letter:");
+    scanf("%c",&ch);
+    if (ch >= 'A' && ch <= 'Z'){    //大写 => 小写
+        ch = ch + 'a' - 'A';
+    }   
+    else if(ch >= 'a' && ch <= 'z'){ // 小写 => 大写    
+        ch = ch + 'A' - 'a';
+    }   
+}
+
+//main.c
+#include <stdio.h>
+#include "tra.h"
+int main(){
+    print();
+    printf("corresponding letter is %c\n",ch);
+    return 0;
+}
+
+//tra.h
+#ifndef     __TRA_H__
+#define     __TRA_H__
+extern char ch; 
+void print(void);
+#endif      //__TRA_H__
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

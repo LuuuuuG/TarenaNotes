@@ -1,0 +1,35 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+
+//test画图 只显示老鼠的位置~
+
+int main(){
+  int i,j;  //i,j记录老鼠的位置
+  
+  int m,n;  //m,n用来画地图
+  srand(time(0));   //随机生成老鼠的位置
+  i = rand () %3 + 1;
+  j = rand () %3 + 1;
+
+  for (m = 1;m <= 3; m++ ){
+      for (n = 1;n <= 3;n++){
+	
+	  for(;m == i;){
+	     for(;n == j;){
+	     printf("X");
+	     }
+	  }
+
+	printf("*");
+	 
+	}
+	printf("\n");
+  }
+
+
+
+  return 0;
+}

@@ -1,0 +1,80 @@
+//1 定义WinMain入口
+//2 定义窗口处理函数(窗口处理函数,处理消息)
+//3 注册窗口类（往操作系统内核汇总写入一些数据）
+//4 创建窗口	CreateWindow();
+//5 显示窗口	ShowWindow();
+//6 消息循环
+
+
+#include "stdafx.h"
+HINSTANCE g_hInstance = 0;//保存当前程序实例句柄 
+
+//2 窗口处理函数
+LRESULT CALLBACK WndProc(HWND hWnd,UINT msgID,
+			WPARAM wParam,LPARAM lParam){
+	switch (msgID){
+		case WM_DESTROY:
+			PostQuitMessage(0);//能够使GetMessage返回0???
+			break;
+	}
+	return DefWindowProc (hWnd,msgID,wParam,lParam);
+		//给各种消息做默认处理
+}
+
+//3 注册窗口类
+void Register (LPSTR lpClassName,WNDPROC Wndproc){
+	WNDCLASSEX wce = {0};
+	wce.cbSize = sizeof(wce);
+	wce.cbClsExtra = 0;
+	wce.cbWndExtra = 0;
+	wce.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+	wce.hCursor = NULL; //系统指定
+	wce.hIcon = NULL; //系统指定
+	wce.hIconSm = NULL; //系统指定
+	wce.hInstance = g_hInstance;
+	wce.lpfnWndProc = Wndproc;
+	wce.lpszClassName = lpClassName;
+	wce.lpszMenuName = NULL;
+	wce.style = CS_HREDRAW | CS_VREDRAW;
+	RegisterClassEx(&wce);//以上所有赋值全部写入操作系统。
+}
+
+//4 创建主窗口
+HWND CreateMain(LPSTR lpClassName,LPSTR lpWndName){
+	HWND hWnd = CreateWindowEx(0,lpClassName,lpWndName,WS_OVERLAPPEDWINDOW,
+		100,100,700,500,NULL,NULL,g_hInstance,NULL);
+	return hWnd;
+}
+
+//5 显示窗口
+void Display(HWND hWnd){
+	ShowWindow(hWnd,SW_SHOW);
+	UpdateWindow(hWnd);
+}
+
+//6 消息循环
+void Message(){
+	MSG nMsg = {0};
+	while (GetMessage(&nMsg,NULL,0,0))
+	{
+		TranslateMessage(&nMsg);
+		DispatchMessage(&nMsg);//将消息交给窗口处理函数
+	}
+}
+
+//1 入口程序
+int APIENTRY WinMain(HINSTANCE hInstance,
+                     HINSTANCE hPrevInstance,
+                     LPSTR     lpCmdLine,
+                     int       nCmdShow)
+{
+	g_hInstance = hInstance;
+	Register("Main",WndProc);
+	HWND hWnd = CreateMain("Main","window");
+	Display(hWnd);
+	Message();
+	return 0;
+}
+
+
+

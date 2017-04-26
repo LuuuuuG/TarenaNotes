@@ -1,0 +1,36 @@
+#include<stdio.h>
+exec sql include sqlca;
+int main(){
+	exec sql begin declare section;
+	  char userpasswd[30]="openlab/open123";
+	  int id=100;
+	  char name[30]="test100";
+	exec sql end declare section;
+	exec sql connect:userpasswd;
+	  //1 ddl 建表
+	  exec sql create table testprocsql_xsy_233(
+	    id number primary key,
+		name varchar2(30)
+			  );
+	  if(sqlca.sqlcode==0){
+		printf("建表成功！\n");
+	  }
+	  else{
+		printf("%s\n",sqlca.sqlerrm.sqlerrmc);
+	  }
+	  //2 dml 写入数据
+	  exec sql insert into testprocsql_xsy_233
+		  values(:id,:name);
+	  //3 tcl 提交
+	  exec sql commit;
+	  //4 dml 更新 把id=100的name改为 test99
+	  exec sql update testprocsql_xsy_233
+		  set name='xsy233' where id=100;
+	  exec sql commit;
+	  //5 查询id=100 的name并输出
+	  exec sql select name into :name from testprocsql_xsy_233
+		  where id=100;
+	  printf("name=%s\n",name);
+	exec sql commit work release;
+	return 0;
+}

@@ -1,0 +1,305 @@
+/**************************************************************************/
+*															              *	*							  day_02	                                  *	
+*									                                      *
+/**************************************************************************/
+
+
+
+
+
+	三、表操作
+	  3.1 创建表和删除表
+		1. 标识符的命名
+		  a. 大小写英文字母、0-9 数字、 $ 、#
+		  b. 不能用数字开头
+		  c. 1-30 位
+		  d. 不能和关键字 或其它的对象重名
+			作用：给表、字段、数据库对象命名
+		2. 创建表的语法
+			表名_姓名_位置
+			create table 表名(
+			  字段名1 数据类型,
+			  字段名2 数据类型,
+				...
+			  字段n	  数据类型
+			);
+
+		  e.g. 创建一个表：
+			编号 number
+			姓名 varchar2	长度25
+			工资 number		保留2位小数点
+			入职日期 date
+			create table emp_XuShaoYuan_233(
+				id number(5),
+				name varchar2(25),
+				salary number(10,2),
+				start_date date
+			);
+
+		删除表： drop table 表名;
+			
+
+	  3.2 DML语句
+		  insert(插入) delete(删除) update(更新)
+
+		1. insert语句
+			1) 语法
+			  insert into 表名[(字段列表)] values(值列表);
+			2) 举例
+				insert into emp_XuShaoYuan_233(id,name,salary,start_date)
+				  values(233,'XuShaoYuan',2333,sysdate);
+				
+
+				当值列表的数量和顺序和表定义的一致，可以省略字段列表
+				insert into emp_XuShaoYuan_233
+				  values(2333,'XuShaoYuan2',233.3,
+					     to_date('2016-02-03','yyyy-mm-dd'));
+
+				当值列表没有给所有的字段传值时，字段列表不能省略
+			  字段列表的顺序和内容要和值列表一致
+				insert into emp_XuShaoYuan_233(id,name,salary)
+				  values(250,'xsy',233.33);
+
+				 或者省略字段列表，其对应位置字段值填空值
+				insert into emp_XuShaoYuan_233
+				  values(23333,'xsy',23333.33,null);
+
+				commit;
+			select * from emp_XuShaoYuan_233;//查看表中所有数据
+
+			desc emp_XuShaoYuan_233;//描述表结构
+
+
+		2. delete语法
+			1) 语法
+				delete from 表名[where 条件];
+				  没有where子句的delete语句 表示清空表中全部数据
+				rollback; //-- 回滚 表示撤销操作	
+				
+				delete from emp_XuShaoYuan_233 
+					where start_date is null;
+
+
+		3. update 语句
+		  1)语法
+			update 表名 set 字段1 = 更新值1,字段2 = 更新值2
+			  [where 条件];
+		  2)示例
+			update emp_XuShaoYuan_233 set salary = salary - 100;
+			update emp_XuShaoYuan_233 set salary = salary + 50
+			where id = 233;			
+
+			
+		练习：
+			假设有一张成绩表，字段StuNo(学号)、c_no(课程编号)、score(成绩)。
+			把c_no为1的成绩每人加5分，100分封顶。
+/*建表*/
+create table score2(
+stuNo number not null,
+c_no number not null,
+score number check(score<=100)
+);
+commit;
+insert into score2 values(1,1,96);
+insert into score2 values(1,2,88);
+insert into score2 values(2,1,90);
+insert into score2 values(2,2,56);
+insert into score2 values(3,1,66);
+insert into score2 values(3,2,98);
+insert into score2 values(4,1,80);
+insert into score2 values(5,1,50);
+commit;
+
+			
+		//查看表 select * from score2;
+			--update score2 set score = 100
+				where score >= 95;		//先将分数超过95的加到100分
+
+			--update score2 set score = score + 5
+				where c_no = 1 and score < 95;  //再将分数不足95的+5
+
+
+	3.3 TCL
+		1. 事务控制语句的含义
+			commit;	确认事务
+			rollback;回滚事物
+			savepoint n; 保存点
+
+		2. 事务的四大特征
+		  1)原子性 
+			  事务中的语句是一个不可分割的整体
+				转帐:
+				--update account set balance = balance - 2000
+					where a_no = 1;
+				a//扣款成功
+				--update account set balance = balance + 2000
+					where a_no = 2;
+				b//收款成功
+			
+				if(a&&b)
+					commit;//转帐成功
+				else
+					rollback;
+			要么一起成功，要么一起失败
+
+		  2)隔离性
+			  一个事务中的语句，在没有提交之前，这个语句所引起的数据的变化，对另一个
+			事务而言是不可见的
+
+		  3)持久性
+			
+		  4)一致性
+
+
+		3. 部分成功 部分失败
+		  create table testtrans_xsy_233(
+			id number,
+			name varchar2(25)
+		  );
+
+			insert into testtrans_xsy_233 values(1,'test1');
+			savepoint a;
+			insert into testtrans_xsy_233 values(2,'test2');
+			savepoint b;
+			insert into testtrans_xsy_233 values(3,'test3');
+			select * from testtrans_xsy_233;
+			rollback to b;
+			commit;
+			select * from testtrans_xsy_233;
+
+		
+		//	select * from testtrans_xsy_233; 查表
+		//  delete from testtrans_xsy_233;	 删表
+
+			select语句：和事务无关
+			ddl语句：自动提交
+			dml语句：默认不是自动提交 手动提交
+
+
+
+
+	总结与回顾：
+		1. 组函数和分组
+			count 
+			max
+			min
+			sum
+			avg
+		
+			对null值的处理 ： 忽略
+			都可以使用distinct排重
+		
+		group by 分组标准
+			
+		分组语句中的字段 要么是分呢组标准 要么是组函数的参数
+
+		having 条件
+		 	分组后的筛选 只能在group by 后使用
+
+		2. 子查询
+			where 
+			having	
+			from
+
+		3. 表操作
+		  1) ddl
+		  2) dml
+		  3) tcl
+
+		练习：
+			1 列出编号43的部门的人数、最高工资、最低工资、总工资、平均工资。
+				select count(id),max(salary),min(salary),sum(salary),avg(salary)
+				  from s_emp
+					where dept_id = 43;
+
+			2 按照部门分组，显示人数大于2的每个部门的名称(id)和人数 
+				select e.dept_id,d.name,count(e.id)
+				  from s_emp e,s_dept d
+					where e.dept_id = d.id
+					  group by e.dept_id,d.name
+						having count(e.id)>2;
+
+			3 查询工资高于'Ben'的员工信息
+				select id,first_name,salary from s_emp
+				  where salary > (
+					select salary from s_emp
+					  where first_name = 'Ben'
+				);
+
+			4 使用子查询分别列出领导的信息和普通员工的信息
+				select id,first_name,salary from s_emp
+				  where id in (
+					select manager_id from s_emp
+				);
+
+				select id,first_name,salary from s_emp
+				  where id not in(
+					select manager_id from s_emp
+					  where manager_id is not null
+				);
+
+			5 列出所有平均工资高于42部门的平均工资的部门信息(部门编号，部门平均工资)
+				select dept_id,avg(salary) from s_emp
+				  group by dept_id 
+					having avg(salary) > (
+					select avg(salary) from s_emp
+					  where dept_id = 42
+				);
+
+			6 用子查询列出员工的first_name 部门的name 地区的 name
+				select s_emp.first_name,dept.d_name,dept.r_name
+				  from s_emp,(
+					select d.id id,d.name d_name,r.name r_name
+					  from s_dept d,s_region r
+						where d.region_id = r.id)dept 
+				  	where s_emp.dept_id = dept.id;		
+
+
+			7 创建如下数据表
+				表名: Student_名字_编号
+				StuNo: number
+				Name: varchar2(25)
+				Birthday:date
+				Address:varchar2(50)
+				Phone:varchar2(20)
+
+			 插入3条测试数据
+				将编号为2 的学生的地址更改为null
+				删除表中编号为3 的数据
+			create table Student_xushaoyuan_233(
+			  	StuNo number,
+				Name varchar2(25),
+				Birthday date,
+				Address varchar2(50),
+				Phone varchar2(20)
+			);
+			commit;
+			insert into Student_xushaoyuan_233 values(1,'zhangsan',to_date('2000-01-01','yyyy-mm-dd'),'beijing','110');
+
+			insert into Student_xushaoyuan_233 values(2,'lisi',to_date('2000-01-01','yyyy-mm-dd'),'beijing','120');
+
+			insert into Student_xushaoyuan_233 values(3,'wangwu',to_date('2000-01-01','yyyy-mm-dd'),'beijing','119');
+
+			commit;
+
+		 	update Student_xushaoyuan_233 set Address = null
+			  where StuNo = 2;
+		
+
+			delete from Student_xushaoyuan_233 where StuNo = 3;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
